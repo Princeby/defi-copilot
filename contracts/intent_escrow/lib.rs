@@ -2,140 +2,156 @@
 
 #[ink::contract]
 mod intent_escrow {
+    use ink::storage::Mapping;
+    use scale::{Decode, Encode};
 
-    /// Defines the storage of your contract.
-    /// Add new fields to the below struct in order
-    /// to add new static storage fields to your contract.
+    #[derive(Debug, PartialEq, Eq, Encode, Decode)]
+    #[cfg_attr(feature = "std", derive(scale_info::TypeInfo))]
+    pub enum OrderStatus {
+        Pending, Locked, PartiallyFilled, Executed, Refunded, Disputed,
+    }
+
+    #[derive(Debug, PartialEq, Eq, Encode, Decode)]
+    #[cfg_attr(feature = "std", derive(scale_info::TypeInfo))]
+    pub struct FusionOrder {
+        maker: AccountId,
+        from_token: AccountId,
+        to_token: AccountId,
+        from_amount: Balance,
+        min_to_amount: Balance,
+        hashlock: Hash,
+        timelock: Timestamp,
+        intent_hash: Hash,
+        assigned_resolver: Option<AccountId>,
+        ethereum_escrow_src: Option<AccountId>,
+        status: OrderStatus,
+        created_at: Timestamp,
+        resolver_fee: Balance,
+        filled_amount: Balance,
+    }
+
     #[ink(storage)]
     pub struct IntentEscrow {
-        /// Stores a single `bool` value on the storage.
-        value: bool,
+        orders: Mapping<u64, FusionOrder>,
+        order_nonce: u64,
+        relayer_coordinator: Option<AccountId>,
+        protocol_fee_bps: u32,
+        owner: AccountId,
+        paused: bool,
+        active_htlcs: Mapping<Hash, u64>,
+    }
+
+    #[derive(Debug, PartialEq, Eq, Encode, Decode)]
+    #[cfg_attr(feature = "std", derive(scale_info::TypeInfo))]
+    pub enum Error {
+        ContractPaused, OrderNotFound, InvalidOrderStatus, DeadlineExpired,
+        Unauthorized, InvalidHashlock, InsufficientFunds, RelayerNotRegistered,
+    }
+
+    #[ink(event)]
+    pub struct FusionOrderCreated {
+        #[ink(topic)]
+        order_id: u64,
+        #[ink(topic)]
+        maker: AccountId,
+        intent_hash: Hash,
+        ethereum_escrow_src: Option<AccountId>,
+        from_amount: Balance,
+        min_to_amount: Balance,
+        timelock: Timestamp,
+    }
+
+    #[ink(event)]
+    pub struct ResolverAssigned {
+        #[ink(topic)]
+        order_id: u64,
+        #[ink(topic)]
+        resolver: AccountId,
+        hashlock: Hash,
+        resolver_fee: Balance,
+    }
+
+    #[ink(event)]
+    pub struct CrossChainSwapCompleted {
+        #[ink(topic)]
+        order_id: u64,
+        resolver: AccountId,
+        secret: Hash,
+        final_amount: Balance,
     }
 
     impl IntentEscrow {
-        /// Constructor that initializes the `bool` value to the given `init_value`.
         #[ink(constructor)]
-        pub fn new(init_value: bool) -> Self {
-            Self { value: init_value }
+        pub fn new(protocol_fee_bps: u32) -> Self {
+            Self {
+                orders: Mapping::default(),
+                order_nonce: 0,
+                relayer_coordinator: None,
+                protocol_fee_bps,
+                owner: Self::env().caller(),
+                paused: false,
+                active_htlcs: Mapping::default(),
+            }
         }
 
-        /// Constructor that initializes the `bool` value to `false`.
-        ///
-        /// Constructors can delegate to other constructors.
-        #[ink(constructor)]
-        pub fn default() -> Self {
-            Self::new(Default::default())
-        }
-
-        /// A message that can be called on instantiated contracts.
-        /// This one flips the value of the stored `bool` from `true`
-        /// to `false` and vice versa.
         #[ink(message)]
-        pub fn flip(&mut self) {
-            self.value = !self.value;
-        }
-
-        /// Simply returns the current value of our `bool`.
-        #[ink(message)]
-        pub fn get(&self) -> bool {
-            self.value
-        }
-    }
-
-    /// Unit tests in Rust are normally defined within such a `#[cfg(test)]`
-    /// module and test functions are marked with a `#[test]` attribute.
-    /// The below code is technically just normal Rust code.
-    #[cfg(test)]
-    mod tests {
-        /// Imports all the definitions from the outer scope so we can use them here.
-        use super::*;
-
-        /// We test if the default constructor does its job.
-        #[ink::test]
-        fn default_works() {
-            let intent_escrow = IntentEscrow::default();
-            assert_eq!(intent_escrow.get(), false);
-        }
-
-        /// We test a simple use case of our contract.
-        #[ink::test]
-        fn it_works() {
-            let mut intent_escrow = IntentEscrow::new(false);
-            assert_eq!(intent_escrow.get(), false);
-            intent_escrow.flip();
-            assert_eq!(intent_escrow.get(), true);
-        }
-    }
-
-
-    /// This is how you'd write end-to-end (E2E) or integration tests for ink! contracts.
-    ///
-    /// When running these you need to make sure that you:
-    /// - Compile the tests with the `e2e-tests` feature flag enabled (`--features e2e-tests`)
-    /// - Are running a Substrate node which contains `pallet-contracts` in the background
-    #[cfg(all(test, feature = "e2e-tests"))]
-    mod e2e_tests {
-        /// Imports all the definitions from the outer scope so we can use them here.
-        use super::*;
-
-        /// A helper function used for calling contract messages.
-        use ink_e2e::ContractsBackend;
-
-        /// The End-to-End test `Result` type.
-        type E2EResult<T> = std::result::Result<T, Box<dyn std::error::Error>>;
-
-        /// We test that we can upload and instantiate the contract using its default constructor.
-        #[ink_e2e::test]
-        async fn default_works(mut client: ink_e2e::Client<C, E>) -> E2EResult<()> {
-            // Given
-            let mut constructor = IntentEscrowRef::default();
-
-            // When
-            let contract = client
-                .instantiate("intent_escrow", &ink_e2e::alice(), &mut constructor)
-                .submit()
-                .await
-                .expect("instantiate failed");
-            let call_builder = contract.call_builder::<IntentEscrow>();
-
-            // Then
-            let get = call_builder.get();
-            let get_result = client.call(&ink_e2e::alice(), &get).dry_run().await?;
-            assert!(matches!(get_result.return_value(), false));
-
+        pub fn set_relayer_coordinator(&mut self, coordinator: AccountId) -> Result<(), Error> {
+            if self.env().caller() != self.owner { return Err(Error::Unauthorized); }
+            self.relayer_coordinator = Some(coordinator);
             Ok(())
         }
 
-        /// We test that we can read and write a value from the on-chain contract.
-        #[ink_e2e::test]
-        async fn it_works(mut client: ink_e2e::Client<C, E>) -> E2EResult<()> {
-            // Given
-            let mut constructor = IntentEscrowRef::new(false);
-            let contract = client
-                .instantiate("intent_escrow", &ink_e2e::bob(), &mut constructor)
-                .submit()
-                .await
-                .expect("instantiate failed");
-            let mut call_builder = contract.call_builder::<IntentEscrow>();
+        #[ink(message, payable)]
+        pub fn submit_fusion_intent(
+            &mut self,
+            from_token: AccountId,
+            to_token: AccountId,
+            from_amount: Balance,
+            min_to_amount: Balance,
+            deadline: Timestamp,
+            ethereum_escrow_src: Option<AccountId>,
+            max_resolver_fee: Balance,
+        ) -> Result<u64, Error> {
+            if self.paused { return Err(Error::ContractPaused); }
+            let caller = self.env().caller();
+            let current_time = self.env().block_timestamp();
+            if deadline <= current_time { return Err(Error::DeadlineExpired); }
+            if self.env().transferred_value() < from_amount { return Err(Error::InsufficientFunds); }
 
-            let get = call_builder.get();
-            let get_result = client.call(&ink_e2e::bob(), &get).dry_run().await?;
-            assert!(matches!(get_result.return_value(), false));
+            let timelock = current_time + 24 * 60 * 60 * 1000;
+            let intent_data = (from_token, to_token, from_amount, min_to_amount, deadline, caller);
+            let intent_hash = self.env().hash_encoded::<blake2::Blake2x256, _>(&intent_data);
 
-            // When
-            let flip = call_builder.flip();
-            let _flip_result = client
-                .call(&ink_e2e::bob(), &flip)
-                .submit()
-                .await
-                .expect("flip failed");
+            let order_id = self.order_nonce;
+            let order = FusionOrder {
+                maker: caller,
+                from_token,
+                to_token,
+                from_amount,
+                min_to_amount,
+                hashlock: Hash::default(),
+                timelock,
+                intent_hash,
+                assigned_resolver: None,
+                ethereum_escrow_src,
+                status: OrderStatus::Pending,
+                created_at: current_time,
+                resolver_fee: max_resolver_fee,
+                filled_amount: 0,
+            };
 
-            // Then
-            let get = call_builder.get();
-            let get_result = client.call(&ink_e2e::bob(), &get).dry_run().await?;
-            assert!(matches!(get_result.return_value(), true));
-
-            Ok(())
+            self.orders.insert(order_id, &order);
+            self.order_nonce += 1;
+            self.env().emit_event(FusionOrderCreated {
+                order_id,
+                maker: caller,
+                intent_hash,
+                ethereum_escrow_src,
+                from_amount,
+                min_to_amount,
+                timelock,
+            });
+            Ok(order_id)
         }
     }
 }
