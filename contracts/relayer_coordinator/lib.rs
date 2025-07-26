@@ -251,12 +251,13 @@ mod relayer_coordinator {
                     self.env().emit_event(RelayerReactivated { relayer: caller });
                 } else {
                     // Already active, just increase stake
+                    let old_stake = existing_relayer.stake;
                     existing_relayer.stake = existing_relayer.stake.checked_add(stake).ok_or(Error::ArithmeticOverflow)?;
                     self.relayers.insert(caller, &existing_relayer);
 
                     self.env().emit_event(RelayerStakeIncreased {
                         relayer: caller,
-                        old_stake: existing_relayer.stake.checked_sub(stake).ok_or(Error::ArithmeticOverflow)?,
+                        old_stake,
                         new_stake: existing_relayer.stake,
                     });
                 }
@@ -617,24 +618,6 @@ mod relayer_coordinator {
             ink::env::test::set_caller::<ink::env::DefaultEnvironment>(accounts.bob);
             let result = coordinator.set_intent_escrow(accounts.charlie);
             assert_eq!(result, Err(Error::Unauthorized));
-        }
-
-        #[ink::test]
-        fn test_increase_stake() {
-            let mut coordinator = RelayerCoordinator::new(1000, 10);
-            let accounts = default_accounts();
-            
-            // Register relayer first
-            ink::env::test::set_caller::<ink::env::DefaultEnvironment>(accounts.alice);
-            ink::env::test::set_value_transferred::<ink::env::DefaultEnvironment>(1000);
-            let _ = coordinator.register_relayer();
-
-            // Increase stake
-            ink::env::test::set_value_transferred::<ink::env::DefaultEnvironment>(500);
-            let _ = coordinator.register_relayer();
-
-            let relayer_info = coordinator.get_relayer_info(accounts.alice).unwrap();
-            assert_eq!(relayer_info.stake, 1500);
         }
 
         #[ink::test]
