@@ -1,5 +1,5 @@
 [package]
-name = "intent_escrow"
+name = "fusion_polkadot_escrow"
 version = "0.1.0"
 authors = ["Your Name <your.email@example.com>"]
 edition = "2021"
@@ -15,7 +15,7 @@ ink_e2e = "5.0.0"
 
 
 [lib]
-name = "intent_escrow"
+name = "fusion_polkadot_escrow"
 path = "lib.rs"
 
 [features]
