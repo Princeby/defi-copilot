@@ -433,7 +433,7 @@ mod fusion_polkadot_escrow {
             Ok(())
         }
 
-        /// Execute swap with secret reveal (matches 1inch withdraw pattern)
+        /// Execute swap with secret reveal (corrected version)
         #[ink(message)]
         pub fn execute_swap(
             &mut self,
@@ -463,44 +463,50 @@ mod fusion_polkadot_escrow {
                 return Err(Error::InvalidSecret);
             }
 
+            // Verify Ethereum escrow is deployed (for PolkadotToEthereum)
+            if order.direction == SwapDirection::PolkadotToEthereum {
+                if order.ethereum_escrow.is_none() {
+                    return Err(Error::EthereumEscrowNotSet);
+                }
+            }
+
             // Calculate amounts with overflow protection
             let total_amount = order.src_amount;
             let protocol_fee = self.calculate_protocol_fee(total_amount)?;
             let remaining_after_protocol = total_amount.checked_sub(protocol_fee).ok_or(Error::ArithmeticOverflow)?;
             let resolver_fee = order.resolver_fee.min(remaining_after_protocol);
-            let maker_amount = remaining_after_protocol.checked_sub(resolver_fee).ok_or(Error::ArithmeticOverflow)?;
+            let net_amount = remaining_after_protocol.checked_sub(resolver_fee).ok_or(Error::ArithmeticOverflow)?;
 
             // Execute transfers based on direction
             match order.direction {
                 SwapDirection::PolkadotToEthereum => {
-                    // Funds stay locked, will be claimed on Ethereum using the secret
-                    // This is the "burn" side of the HTLC
+                    // CORRECTED: Resolver gets the funds to provide liquidity on Ethereum
+                    let resolver_address = order.resolver.ok_or(Error::OnlyResolver)?;
                     
-                    // Pay resolver fee
-                    if resolver_fee > 0 && order.resolver.is_some() {
-                        self.env().transfer(order.resolver.unwrap(), resolver_fee)
-                            .map_err(|_| Error::TransferFailed)?;
-                    }
+                    // Transfer net amount + resolver fee to resolver
+                    let total_to_resolver = net_amount.checked_add(resolver_fee).ok_or(Error::ArithmeticOverflow)?;
+                    self.env().transfer(resolver_address, total_to_resolver)
+                        .map_err(|_| Error::TransferFailed)?;
                     
                     // Pay protocol fee
                     if protocol_fee > 0 {
                         self.env().transfer(self.owner, protocol_fee)
                             .map_err(|_| Error::TransferFailed)?;
                     }
-                    
-                    // Remaining funds are "burned" (locked forever as proof of payment)
-                    // The secret allows claiming equivalent amount on Ethereum
                 },
                 SwapDirection::EthereumToPolkadot => {
-                    // This is the "mint" side - release funds to maker
-                    self.env().transfer(order.maker, maker_amount)
+                    // User receives funds from resolver's deposit
+                    self.env().transfer(order.maker, net_amount)
                         .map_err(|_| Error::TransferFailed)?;
                         
-                    if resolver_fee > 0 && order.resolver.is_some() {
-                        self.env().transfer(order.resolver.unwrap(), resolver_fee)
+                    // Pay resolver fee
+                    if resolver_fee > 0 {
+                        let resolver_address = order.resolver.ok_or(Error::OnlyResolver)?;
+                        self.env().transfer(resolver_address, resolver_fee)
                             .map_err(|_| Error::TransferFailed)?;
                     }
                     
+                    // Pay protocol fee
                     if protocol_fee > 0 {
                         self.env().transfer(self.owner, protocol_fee)
                             .map_err(|_| Error::TransferFailed)?;
@@ -526,7 +532,7 @@ mod fusion_polkadot_escrow {
 
             Ok(())
         }
-
+        
         /// Partial fill execution (stretch goal)
         #[ink(message)]
         pub fn execute_partial_fill(
