@@ -1,22 +1,22 @@
 [package]
 name = "intent_escrow"
 version = "0.1.0"
-authors = ["ogbodoebuka"]
+authors = ["Your Name <your.email@example.com>"]
 edition = "2021"
 
 [dependencies]
-ink = { version = "4.3.0", default-features = false }
+ink = { version = "5.0.0", default-features = false }
 scale = { package = "parity-scale-codec", version = "3", default-features = false, features = ["derive"] }
-scale-info = { version = "2.5.0", default-features = false, features = ["derive"], optional = true }
+scale-info = { version = "2.6", default-features = false, features = ["derive"], optional = true }
 
-# This section is CRUCIAL. It must exist and be correct.
+[dev-dependencies]
+ink_e2e = "5.0.0"
+
+
+
 [lib]
 name = "intent_escrow"
-path = "src/lib.rs" # Explicitly point to your library file
-crate-type = [
-    "cdylib", # For the Wasm contract
-    "rlib",   # For unit tests
-]
+path = "lib.rs"
 
 [features]
 default = ["std"]
@@ -26,10 +26,3 @@ std = [
     "scale-info/std",
 ]
 ink-as-dependency = []
-e2e-tests = []
-
-[profile.release]
-panic = "abort"
-codegen-units = 1
-opt-level = "z"
-lto = true
