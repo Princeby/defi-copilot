@@ -1,473 +1,549 @@
 #![cfg_attr(not(feature = "std"), no_std, no_main)]
 
+extern crate alloc;
+use alloc::vec::Vec;
+
 use ink::storage::Mapping;
 use scale::{Decode, Encode};
 
-/// Polkadot Resolver Contract - Coordinates cross-chain swaps
+/// Polkadot Resolver Contract 
 #[ink::contract]
 mod polkadot_resolver {
     use super::*;
 
-    /// Cross-chain swap direction
+    /// Cross-chain swap direction 
     #[derive(Debug, Clone, PartialEq, Eq, Encode, Decode)]
     #[cfg_attr(feature = "std", derive(scale_info::TypeInfo, ink::storage::traits::StorageLayout))]
     pub enum SwapDirection {
-        EthereumToPolkadot,
-        PolkadotToEthereum,
+        SourceToDestination,  // Polkadot to Ethereum
+        DestinationToSource,  // Ethereum to Polkadot
     }
 
-    /// Ethereum escrow proof data
+    /// Immutable escrow parameters 
     #[derive(Debug, Clone, PartialEq, Eq, Encode, Decode)]
     #[cfg_attr(feature = "std", derive(scale_info::TypeInfo, ink::storage::traits::StorageLayout))]
-    pub struct EthereumEscrowProof {
-        pub escrow_address: [u8; 20],
-        pub block_hash: [u8; 32],
-        pub block_number: u64,
-        pub tx_hash: [u8; 32],
-        pub merkle_proof: Vec<[u8; 32]>,
-    }
-
-    /// Resolver job status
-    #[derive(Debug, Clone, PartialEq, Eq, Encode, Decode)]
-    #[cfg_attr(feature = "std", derive(scale_info::TypeInfo, ink::storage::traits::StorageLayout))]
-    pub enum JobStatus {
-        Pending,           // Waiting for resolver to pick up
-        EthereumDeployed,  // Ethereum escrow deployed
-        PolkadotDeployed,  // Polkadot escrow deployed
-        Executing,         // Secret revealed, executing swaps
-        Completed,         // Both sides completed
-        Failed,            // Something went wrong
-        Cancelled,         // Job cancelled
-    }
-
-    /// Cross-chain resolver job
-    #[derive(Debug, Clone, PartialEq, Eq, Encode, Decode)]
-    #[cfg_attr(feature = "std", derive(scale_info::TypeInfo, ink::storage::traits::StorageLayout))]
-    pub struct ResolverJob {
-        pub job_id: [u8; 32],
-        pub polkadot_order_hash: [u8; 32],
-        pub ethereum_order_hash: [u8; 32],
-        pub direction: SwapDirection,
+    pub struct EscrowImmutables {
+        pub order_hash: [u8; 32],
         pub hash_lock: [u8; 32],
-        pub secret: Option<[u8; 32]>,
-        pub resolver: AccountId,
         pub maker: AccountId,
-        pub status: JobStatus,
-        pub ethereum_escrow_proof: Option<EthereumEscrowProof>,
-        pub created_at: Timestamp,
-        pub deadline: Timestamp,
-        pub stake_amount: Balance,
+        pub taker: AccountId,
+        pub token: AccountId,
+        pub amount: Balance,
+        pub safety_deposit: Balance,
+        pub timelocks: TimeLocks,
+        pub deployed_at: Option<Timestamp>,
     }
 
-    /// Events
+    /// Timelock structure 
+    #[derive(Debug, Clone, PartialEq, Eq, Encode, Decode)]
+    #[cfg_attr(feature = "std", derive(scale_info::TypeInfo, ink::storage::traits::StorageLayout))]
+    pub struct TimeLocks {
+        pub src_withdrawal: u32,
+        pub src_public_withdrawal: u32, 
+        pub src_cancellation: u32,
+        pub src_public_cancellation: u32,
+        pub dst_withdrawal: u32,
+        pub dst_public_withdrawal: u32,
+        pub dst_cancellation: u32,
+    }
+
+    /// Order structure 
+    #[derive(Debug, Clone, PartialEq, Eq, Encode, Decode)]
+    #[cfg_attr(feature = "std", derive(scale_info::TypeInfo, ink::storage::traits::StorageLayout))]
+    pub struct Order {
+        pub salt: u128,
+        pub maker: AccountId,
+        pub receiver: AccountId,
+        pub maker_asset: AccountId,
+        pub taker_asset: [u8; 20], // Ethereum address
+        pub making_amount: Balance,
+        pub taking_amount: Balance,
+        pub maker_traits: U256, // Packed traits
+    }
+
+    /// Taker traits 
+    #[derive(Debug, Clone, PartialEq, Eq, Encode, Decode)]
+    #[cfg_attr(feature = "std", derive(scale_info::TypeInfo, ink::storage::traits::StorageLayout))]
+    pub struct TakerTraits {
+        pub traits: U256,
+    }
+
+    /// Events matching 1inch pattern
     #[ink(event)]
-    pub struct JobCreated {
+    pub struct SrcEscrowDeployed {
         #[ink(topic)]
-        pub job_id: [u8; 32],
-        #[ink(topic)]
-        pub resolver: AccountId,
-        pub direction: SwapDirection,
-        pub polkadot_order_hash: [u8; 32],
-        pub ethereum_order_hash: [u8; 32],
+        pub order_hash: [u8; 32],
+        #[ink(topic)]  
+        pub escrow_address: AccountId,
+        pub immutables: EscrowImmutables,
+        pub safety_deposit: Balance,
     }
 
     #[ink(event)]
-    pub struct EthereumEscrowVerified {
+    pub struct DstEscrowDeployed {
         #[ink(topic)]
-        pub job_id: [u8; 32],
-        pub escrow_address: [u8; 20],
-        pub block_number: u64,
+        pub order_hash: [u8; 32],
+        #[ink(topic)]
+        pub escrow_address: AccountId,
+        pub immutables: EscrowImmutables,
+        pub src_cancellation_timestamp: Timestamp,
     }
 
     #[ink(event)]
-    pub struct SwapExecuted {
+    pub struct EscrowWithdrawal {
         #[ink(topic)]
-        pub job_id: [u8; 32],
-        pub secret_revealed: [u8; 32],
+        pub order_hash: [u8; 32],
+        #[ink(topic)]
+        pub escrow_address: AccountId,
+        pub secret: [u8; 32],
+        pub amount: Balance,
     }
 
     #[ink(event)]
-    pub struct JobCompleted {
+    pub struct EscrowCancellation {
         #[ink(topic)]
-        pub job_id: [u8; 32],
+        pub order_hash: [u8; 32],
+        #[ink(topic)]
+        pub escrow_address: AccountId,
+        pub refund_amount: Balance,
+    }
+
+    #[ink(event)]
+    pub struct ArbitraryCallExecuted {
+        #[ink(topic)]
+        pub target: AccountId,
         pub success: bool,
+        pub data_hash: [u8; 32],
     }
 
     /// Errors
     #[derive(Debug, PartialEq, Eq, Encode, Decode)]
     #[cfg_attr(feature = "std", derive(scale_info::TypeInfo))]
     pub enum Error {
-        JobNotFound,
-        InvalidJobStatus,
+        // Access control
         Unauthorized,
-        OnlyResolver,
         OnlyOwner,
-        DeadlineExpired,
-        InvalidProof,
+        
+        // Order/Escrow errors  
+        EscrowNotFound,
+        InvalidOrderHash,
         InvalidSecret,
-        InsufficientStake,
-        EscrowContractError,
-        RelayerNotTrusted,
+        InvalidImmutables,
+        
+        // Timing errors
+        DeadlineExpired,
+        TimelockNotExpired,
+        
+        // Transfer errors
+        NativeTokenSendingFailure,
+        TransferFailed,
+        InsufficientFunds,
+        
+        // General
+        LengthMismatch,
+        InvalidLength,
         ArithmeticOverflow,
     }
 
     #[ink(storage)]
     pub struct PolkadotResolver {
-        /// Core storage
-        jobs: Mapping<[u8; 32], ResolverJob>,
-        active_resolvers: Mapping<AccountId, bool>,
+        /// Contract owner
+        owner: AccountId,
+        
+        /// Escrow factory reference
+        escrow_factory: AccountId,
+        
+        /// Active escrows
+        escrows: Mapping<[u8; 32], EscrowImmutables>, // order_hash -> immutables
+        escrow_addresses: Mapping<[u8; 32], AccountId>, // order_hash -> escrow_address
         
         /// Cross-chain coordination
-        escrow_contract: AccountId,  // Main Polkadot escrow contract
+        ethereum_resolver: [u8; 20], // Ethereum counterpart address
         trusted_relayers: Mapping<AccountId, bool>,
-        ethereum_block_confirmations: u32,
         
         /// Configuration
-        owner: AccountId,
-        min_stake: Balance,
-        job_timeout: u64,
+        min_safety_deposit: Balance,
         
         /// Metrics
-        job_nonce: u64,
-        total_jobs_completed: u64,
+        total_escrows_created: u64,
     }
 
     impl PolkadotResolver {
         #[ink(constructor)]
         pub fn new(
-            escrow_contract: AccountId,
-            min_stake: Balance,
-            job_timeout: u64,
-            ethereum_block_confirmations: u32,
+            escrow_factory: AccountId,
+            ethereum_resolver: [u8; 20],
+            min_safety_deposit: Balance,
         ) -> Self {
             Self {
-                jobs: Mapping::default(),
-                active_resolvers: Mapping::default(),
-                escrow_contract,
-                trusted_relayers: Mapping::default(),
-                ethereum_block_confirmations,
                 owner: Self::env().caller(),
-                min_stake,
-                job_timeout,
-                job_nonce: 0,
-                total_jobs_completed: 0,
+                escrow_factory,
+                escrows: Mapping::default(),
+                escrow_addresses: Mapping::default(),
+                ethereum_resolver,
+                trusted_relayers: Mapping::default(),
+                min_safety_deposit,
+                total_escrows_created: 0,
             }
         }
 
-        /// Create a new resolver job
+        /// Deploy source escrow 
         #[ink(message, payable)]
-        pub fn create_job(
+        pub fn deploy_src(
             &mut self,
-            polkadot_order_hash: [u8; 32],
-            ethereum_order_hash: [u8; 32],
-            direction: SwapDirection,
-            hash_lock: [u8; 32],
-            deadline: Timestamp,
-        ) -> Result<[u8; 32], Error> {
-            let caller = self.env().caller();
-            let stake = self.env().transferred_value();
-            let current_time = self.env().block_timestamp();
-
-            // Validate stake
-            if stake < self.min_stake {
-                return Err(Error::InsufficientStake);
-            }
-
-            // Generate job ID
-            let job_data = (
-                polkadot_order_hash,
-                ethereum_order_hash,
-                &caller,
-                current_time,
-                self.job_nonce,
-            );
-            let encoded = scale::Encode::encode(&job_data);
-            let job_id = self.env().hash_bytes::<ink::env::hash::Blake2x256>(&encoded);
-
-            let job = ResolverJob {
-                job_id,
-                polkadot_order_hash,
-                ethereum_order_hash,
-                direction: direction.clone(),
-                hash_lock,
-                secret: None,
-                resolver: caller,
-                maker: caller, // Will be updated with actual maker
-                status: JobStatus::Pending,
-                ethereum_escrow_proof: None,
-                created_at: current_time,
-                deadline,
-                stake_amount: stake,
-            };
-
-            self.jobs.insert(job_id, &job);
-            self.job_nonce = self.job_nonce.checked_add(1).ok_or(Error::ArithmeticOverflow)?;
-
-            self.env().emit_event(JobCreated {
-                job_id,
-                resolver: caller,
-                direction,
-                polkadot_order_hash,
-                ethereum_order_hash,
-            });
-
-            Ok(job_id)
-        }
-
-        /// Submit Ethereum escrow deployment proof
-        #[ink(message)]
-        pub fn submit_ethereum_proof(
-            &mut self,
-            job_id: [u8; 32],
-            proof: EthereumEscrowProof,
-        ) -> Result<(), Error> {
-            let caller = self.env().caller();
+            immutables: EscrowImmutables,
+            _order: Order,
+            _signature: [u8; 65], // r(32) + s(32) + v(1)
+            _amount: Balance,
+            _taker_traits: TakerTraits,
+            _args: Vec<u8>,
+        ) -> Result<AccountId, Error> {
+            self.ensure_owner()?;
             
-            // Only trusted relayers can submit proofs
-            if !self.trusted_relayers.get(caller).unwrap_or(false) {
-                return Err(Error::RelayerNotTrusted);
+            let safety_deposit = self.env().transferred_value();
+            if safety_deposit < self.min_safety_deposit {
+                return Err(Error::InsufficientFunds);
             }
 
-            let mut job = self.jobs.get(job_id).ok_or(Error::JobNotFound)?;
+            // Update immutables with deployment timestamp
+            let mut immutables_mem = immutables.clone();
+            immutables_mem.deployed_at = Some(self.env().block_timestamp());
+            immutables_mem.safety_deposit = safety_deposit;
 
-            if job.status != JobStatus::Pending {
-                return Err(Error::InvalidJobStatus);
-            }
+            // Compute escrow address deterministically 
+            let escrow_address = self.compute_escrow_address(&immutables_mem)?;
 
-            // Verify the proof (simplified - real implementation would verify Merkle proof)
-            if !self.verify_ethereum_escrow_proof(&proof)? {
-                return Err(Error::InvalidProof);
-            }
+            // Send safety deposit to computed address
+            self.env().transfer(escrow_address, safety_deposit)
+                .map_err(|_| Error::NativeTokenSendingFailure)?;
 
-            // Update job
-            job.ethereum_escrow_proof = Some(proof.clone());
-            job.status = JobStatus::EthereumDeployed;
-            self.jobs.insert(job_id, &job);
+            // Call escrow factory to create the escrow
+            // This would be a cross-contract call in practice
+            self.create_escrow_contract(escrow_address, &immutables_mem)?;
 
-            self.env().emit_event(EthereumEscrowVerified {
-                job_id,
-                escrow_address: proof.escrow_address,
-                block_number: proof.block_number,
+            // Store escrow data using order_hash as key
+            self.escrows.insert(immutables_mem.order_hash, &immutables_mem);
+            self.escrow_addresses.insert(immutables_mem.order_hash, &escrow_address);
+            
+            self.total_escrows_created = self.total_escrows_created.saturating_add(1);
+
+            self.env().emit_event(SrcEscrowDeployed {
+                order_hash: immutables_mem.order_hash,
+                escrow_address,
+                immutables: immutables_mem,
+                safety_deposit,
             });
 
-            Ok(())
+            Ok(escrow_address)
         }
 
-        /// Deploy Polkadot escrow (called by resolver)
-        #[ink(message)]
-        pub fn deploy_polkadot_escrow(
+        /// Deploy destination escrow 
+        #[ink(message, payable)]
+        pub fn deploy_dst(
             &mut self,
-            job_id: [u8; 32],
-        ) -> Result<(), Error> {
-            let caller = self.env().caller();
-            let mut job = self.jobs.get(job_id).ok_or(Error::JobNotFound)?;
+            dst_immutables: EscrowImmutables,
+            src_cancellation_timestamp: Timestamp,
+        ) -> Result<AccountId, Error> {
+            self.ensure_owner()?;
+            
+            let deposit_amount = self.env().transferred_value();
+            
+            // Compute escrow address
+            let escrow_address = self.compute_escrow_address(&dst_immutables)?;
+            
+            // Send deposit to escrow
+            self.env().transfer(escrow_address, deposit_amount)
+                .map_err(|_| Error::NativeTokenSendingFailure)?;
 
-            if caller != job.resolver {
-                return Err(Error::OnlyResolver);
-            }
+            // Create escrow contract
+            self.create_escrow_contract(escrow_address, &dst_immutables)?;
 
-            if job.status != JobStatus::EthereumDeployed {
-                return Err(Error::InvalidJobStatus);
-            }
+            // Store escrow data
+            self.escrows.insert(dst_immutables.order_hash, &dst_immutables);
+            self.escrow_addresses.insert(dst_immutables.order_hash, &escrow_address);
 
-            // Call the main escrow contract to deploy escrow
-            // This would be a cross-contract call in practice
-            let deploy_result = self.call_escrow_deploy(
-                job.polkadot_order_hash,
-                job.resolver,
-                job.hash_lock,
-                job.ethereum_escrow_proof.clone().unwrap().escrow_address,
-            )?;
+            self.env().emit_event(DstEscrowDeployed {
+                order_hash: dst_immutables.order_hash,
+                escrow_address,
+                immutables: dst_immutables,
+                src_cancellation_timestamp,
+            });
 
-            if deploy_result {
-                job.status = JobStatus::PolkadotDeployed;
-                self.jobs.insert(job_id, &job);
-            }
-
-            Ok(())
+            Ok(escrow_address)
         }
 
-        /// Execute cross-chain swap (reveal secret)
+        /// Withdraw from escrow 
         #[ink(message)]
-        pub fn execute_swap(
+        pub fn withdraw(
             &mut self,
-            job_id: [u8; 32],
+            order_hash: [u8; 32],
             secret: [u8; 32],
+            immutables: EscrowImmutables,
         ) -> Result<(), Error> {
-            let caller = self.env().caller();
-            let mut job = self.jobs.get(job_id).ok_or(Error::JobNotFound)?;
+            let _caller = self.env().caller();
+            
+            // Get escrow address
+            let escrow_address = self.escrow_addresses.get(order_hash)
+                .ok_or(Error::EscrowNotFound)?;
 
-            if caller != job.resolver {
-                return Err(Error::OnlyResolver);
-            }
-
-            if job.status != JobStatus::PolkadotDeployed {
-                return Err(Error::InvalidJobStatus);
-            }
-
-            // Verify secret matches hash lock
+            // Verify secret against hash lock
             let computed_hash = self.env().hash_bytes::<ink::env::hash::Blake2x256>(&secret);
-            if computed_hash != job.hash_lock {
+            if computed_hash != immutables.hash_lock {
                 return Err(Error::InvalidSecret);
             }
 
-            // Call main escrow contract to execute swap
-            let execute_result = self.call_escrow_execute(
-                job.polkadot_order_hash,
+            // Check timelock constraints
+            let current_time = self.env().block_timestamp();
+            self.check_withdrawal_timelock(&immutables, current_time)?;
+
+            // Execute withdrawal via cross-contract call
+            self.execute_escrow_withdrawal(escrow_address, secret, &immutables)?;
+
+            self.env().emit_event(EscrowWithdrawal {
+                order_hash,
+                escrow_address,
                 secret,
-            )?;
-
-            if execute_result {
-                job.secret = Some(secret);
-                job.status = JobStatus::Executing;
-                self.jobs.insert(job_id, &job);
-
-                self.env().emit_event(SwapExecuted {
-                    job_id,
-                    secret_revealed: secret,
-                });
-            }
-
-            Ok(())
-        }
-
-        /// Mark job as completed (called by relayer after confirming both sides)
-        #[ink(message)]
-        pub fn complete_job(
-            &mut self,
-            job_id: [u8; 32],
-            success: bool,
-        ) -> Result<(), Error> {
-            let caller = self.env().caller();
-            
-            if !self.trusted_relayers.get(caller).unwrap_or(false) {
-                return Err(Error::RelayerNotTrusted);
-            }
-
-            let mut job = self.jobs.get(job_id).ok_or(Error::JobNotFound)?;
-
-            if job.status != JobStatus::Executing {
-                return Err(Error::InvalidJobStatus);
-            }
-
-            if success {
-                job.status = JobStatus::Completed;
-                self.total_jobs_completed = self.total_jobs_completed.checked_add(1).ok_or(Error::ArithmeticOverflow)?;
-                
-                // Return stake to resolver
-                self.env().transfer(job.resolver, job.stake_amount)
-                    .map_err(|_| Error::EscrowContractError)?;
-            } else {
-                job.status = JobStatus::Failed;
-                // Stake is slashed (kept by contract)
-            }
-
-            self.jobs.insert(job_id, &job);
-
-            self.env().emit_event(JobCompleted {
-                job_id,
-                success,
+                amount: immutables.amount,
             });
 
             Ok(())
         }
 
-        /// Cancel job (timeout or failure)
+        /// Cancel escrow 
         #[ink(message)]
-        pub fn cancel_job(&mut self, job_id: [u8; 32]) -> Result<(), Error> {
-            let caller = self.env().caller();
+        pub fn cancel(
+            &mut self,
+            order_hash: [u8; 32],
+            immutables: EscrowImmutables,
+        ) -> Result<(), Error> {
+            let escrow_address = self.escrow_addresses.get(order_hash)
+                .ok_or(Error::EscrowNotFound)?;
+
+            // Check cancellation timelock
             let current_time = self.env().block_timestamp();
-            let mut job = self.jobs.get(job_id).ok_or(Error::JobNotFound)?;
+            self.check_cancellation_timelock(&immutables, current_time)?;
 
-            let can_cancel = caller == job.resolver || 
-                           current_time > job.deadline ||
-                           self.trusted_relayers.get(caller).unwrap_or(false);
+            // Execute cancellation via cross-contract call
+            let refund_amount = self.execute_escrow_cancellation(escrow_address, &immutables)?;
 
-            if !can_cancel {
-                return Err(Error::Unauthorized);
+            self.env().emit_event(EscrowCancellation {
+                order_hash,
+                escrow_address,
+                refund_amount,
+            });
+
+            Ok(())
+        }
+
+        /// Arbitrary calls 
+        #[ink(message)]
+        pub fn arbitrary_calls(
+            &mut self,
+            targets: Vec<AccountId>,
+            arguments: Vec<Vec<u8>>,
+        ) -> Result<(), Error> {
+            self.ensure_owner()?;
+            
+            if targets.len() != arguments.len() {
+                return Err(Error::LengthMismatch);
             }
 
-            // Refund stake if not resolver's fault
-            if current_time > job.deadline || caller != job.resolver {
-                self.env().transfer(job.resolver, job.stake_amount)
-                    .map_err(|_| Error::EscrowContractError)?;
+            for (target, args) in targets.iter().zip(arguments.iter()) {
+                let data_hash = self.env().hash_bytes::<ink::env::hash::Blake2x256>(args);
+                
+                // Execute cross-contract call
+                let result = self.execute_arbitrary_call(*target, args);
+                
+                self.env().emit_event(ArbitraryCallExecuted {
+                    target: *target,
+                    success: result.is_ok(),
+                    data_hash,
+                });
+
+                // Continue even if one call fails
             }
 
-            job.status = JobStatus::Cancelled;
-            self.jobs.insert(job_id, &job);
+            Ok(())
+        }
 
+        // --- Cross-chain message functions ---
+
+        /// Verify cross-chain message from Ethereum resolver
+        #[ink(message)]
+        pub fn verify_ethereum_message(
+            &self,
+            _order_hash: [u8; 32],
+            _resolver: AccountId,
+            _hash_lock: [u8; 32],
+            _ethereum_escrow: [u8; 20],
+        ) -> Result<bool, Error> {
+            // This would verify a message/proof from Ethereum
+            // For now, just return true as a placeholder
+            Ok(true)
+        }
+
+        /// Process cross-chain withdrawal notification
+        #[ink(message)]
+        pub fn process_ethereum_withdrawal(
+            &mut self,
+            _order_hash: [u8; 32],
+            _secret: [u8; 32],
+        ) -> Result<(), Error> {
+            // This would process a withdrawal that happened on Ethereum
+            // Update local state accordingly
             Ok(())
         }
 
         // --- View Functions ---
 
         #[ink(message)]
-        pub fn get_job(&self, job_id: [u8; 32]) -> Option<ResolverJob> {
-            self.jobs.get(job_id)
+        pub fn get_escrow_immutables(&self, order_hash: [u8; 32]) -> Option<EscrowImmutables> {
+            self.escrows.get(order_hash)
         }
 
         #[ink(message)]
-        pub fn is_trusted_relayer(&self, relayer: AccountId) -> bool {
-            self.trusted_relayers.get(relayer).unwrap_or(false)
+        pub fn get_escrow_address(&self, order_hash: [u8; 32]) -> Option<AccountId> {
+            self.escrow_addresses.get(order_hash)
+        }
+
+        #[ink(message)]
+        pub fn get_owner(&self) -> AccountId {
+            self.owner
+        }
+
+        #[ink(message)]
+        pub fn get_ethereum_resolver(&self) -> [u8; 20] {
+            self.ethereum_resolver
+        }
+
+        #[ink(message)]
+        pub fn get_total_escrows_created(&self) -> u64 {
+            self.total_escrows_created
         }
 
         // --- Admin Functions ---
 
         #[ink(message)]
+        pub fn transfer_ownership(&mut self, new_owner: AccountId) -> Result<(), Error> {
+            self.ensure_owner()?;
+            self.owner = new_owner;
+            Ok(())
+        }
+
+        #[ink(message)]
         pub fn add_trusted_relayer(&mut self, relayer: AccountId) -> Result<(), Error> {
-            if self.env().caller() != self.owner {
-                return Err(Error::OnlyOwner);
-            }
+            self.ensure_owner()?;
             self.trusted_relayers.insert(relayer, &true);
             Ok(())
         }
 
         #[ink(message)]
-        pub fn approve_resolver(&mut self, resolver: AccountId) -> Result<(), Error> {
-            if self.env().caller() != self.owner {
-                return Err(Error::OnlyOwner);
-            }
-            self.active_resolvers.insert(resolver, &true);
+        pub fn remove_trusted_relayer(&mut self, relayer: AccountId) -> Result<(), Error> {
+            self.ensure_owner()?;
+            self.trusted_relayers.remove(relayer);
             Ok(())
         }
 
         // --- Helper Functions ---
 
-        fn verify_ethereum_escrow_proof(&self, proof: &EthereumEscrowProof) -> Result<bool, Error> {
-            // Simplified verification - real implementation would:
-            // 1. Verify Merkle proof against known Ethereum block hash
-            // 2. Verify transaction inclusion in block
-            // 3. Verify escrow contract deployment
-            // 4. Check minimum confirmations
+        fn ensure_owner(&self) -> Result<(), Error> {
+            if self.env().caller() != self.owner {
+                return Err(Error::OnlyOwner);
+            }
+            Ok(())
+        }
+
+        fn compute_escrow_address(&self, immutables: &EscrowImmutables) -> Result<AccountId, Error> {
+            // Deterministic address computation similar to 1inch CREATE2
+            let seed_data = (
+                &immutables.order_hash,
+                &immutables.hash_lock,
+                &immutables.maker,
+                &immutables.taker,
+                immutables.amount,
+                immutables.deployed_at.unwrap_or(0),
+            );
+            let encoded = scale::Encode::encode(&seed_data);
+            let hash = self.env().hash_bytes::<ink::env::hash::Blake2x256>(&encoded);
             
-            // For now, just basic validation
-            if proof.block_number == 0 || proof.escrow_address == [0u8; 20] {
-                return Ok(false);
+            // Convert hash to AccountId (simplified)
+            let mut account_bytes = [0u8; 32];
+            account_bytes.copy_from_slice(&hash);
+            Ok(AccountId::from(account_bytes))
+        }
+
+        fn create_escrow_contract(
+            &self,
+            _escrow_address: AccountId,
+            _immutables: &EscrowImmutables,
+        ) -> Result<(), Error> {
+            // This would deploy or initialize the escrow contract
+            // For now, assume success
+            Ok(())
+        }
+
+        fn check_withdrawal_timelock(
+            &self,
+            immutables: &EscrowImmutables,
+            current_time: Timestamp,
+        ) -> Result<(), Error> {
+            let deployed_at = immutables.deployed_at.unwrap_or(0);
+            let withdrawal_time = deployed_at.saturating_add(immutables.timelocks.src_withdrawal as u64);
+            
+            if current_time < withdrawal_time {
+                return Err(Error::TimelockNotExpired);
             }
             
-            Ok(true)
+            Ok(())
         }
 
-        fn call_escrow_deploy(
+        fn check_cancellation_timelock(
             &self,
-            order_hash: [u8; 32],
-            resolver: AccountId,
-            hash_lock: [u8; 32],
-            ethereum_escrow: [u8; 20],
-        ) -> Result<bool, Error> {
-            // This would be a cross-contract call to the main escrow contract
-            // For now, return success
-            Ok(true)
+            immutables: &EscrowImmutables,
+            current_time: Timestamp,
+        ) -> Result<(), Error> {
+            let deployed_at = immutables.deployed_at.unwrap_or(0);
+            let cancellation_time = deployed_at.saturating_add(immutables.timelocks.src_cancellation as u64);
+            
+            if current_time < cancellation_time {
+                return Err(Error::TimelockNotExpired);
+            }
+            
+            Ok(())
         }
 
-        fn call_escrow_execute(
+        fn execute_escrow_withdrawal(
             &self,
-            order_hash: [u8; 32],
-            secret: [u8; 32],
-        ) -> Result<bool, Error> {
-            // This would be a cross-contract call to execute the swap
-            // For now, return success
-            Ok(true)
+            _escrow_address: AccountId,
+            _secret: [u8; 32],
+            _immutables: &EscrowImmutables,
+        ) -> Result<(), Error> {
+            // Cross-contract call to escrow.withdraw(secret, immutables)
+            // For now, assume success
+            Ok(())
+        }
+
+        fn execute_escrow_cancellation(
+            &self,
+            _escrow_address: AccountId,
+            immutables: &EscrowImmutables,
+        ) -> Result<Balance, Error> {
+            // Cross-contract call to escrow.cancel(immutables)
+            // Return refunded amount
+            Ok(immutables.amount)
+        }
+
+        fn execute_arbitrary_call(
+            &self,
+            _target: AccountId,
+            _args: &[u8],
+        ) -> Result<(), Error> {
+            // Execute arbitrary cross-contract call
+            // For now, assume success
+            Ok(())
         }
     }
+
+    // --- Type aliases for compatibility ---
+    type U256 = [u8; 32]; // Simplified u256 representation
 }
