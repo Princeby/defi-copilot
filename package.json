@@ -1,17 +1,26 @@
 {
-  "name": "defi-copilot",
+  "name": "fusion-polkadot-relayer",
   "version": "1.0.0",
-  "description": "DeFi Copilot with 1inch Fusion+ Cross-Chain Extension for Ethereum ↔ Polkadot",
-  "main": "index.js",
+  "description": "Cross-chain relayer for Ethereum (1inch Fusion+) and Polkadot integration",
+  "main": "index.ts",
+  "bin": {
+    "fusion-polkadot-relayer": "./dist/app.js"
+  },
   "scripts": {
+    "build": "tsc",
+    "start": "node src/index.ts start",
+    "dev": "ts-node src/index.ts start",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
-    "build": "tsc",
-    "dev": "ts-node src/index.ts",
-    "start": "node dist/index.js",
-    "lint": "eslint \"src/**/*.ts\" \"tests/**/*.ts\"",
-    "lint:fix": "eslint \"src/**/*.ts\" \"tests/**/*.ts\" --fix",
+    "lint": "eslint src/**/*.ts",
+    "lint:fix": "eslint src/**/*.ts --fix",
+    "clean": "rimraf dist",
+    "prepare": "npm run build",
+    "create-order": "node dist/app.js create-order",
+    "status": "node dist/app.js status",
+    "balances": "node dist/app.js balances",
+    "test-connection": "node dist/app.js test",
     "demo": "ts-node src/demo/bidirectional-demo.ts",
     "demo:eth-to-dot": "ts-node src/demo/eth-to-polkadot.ts",
     "demo:dot-to-eth": "ts-node src/demo/polkadot-to-eth.ts",
@@ -19,36 +28,43 @@
     "deploy:mainnet": "ts-node scripts/deploy-mainnet.ts"
   },
   "keywords": [
-    "defi",
     "cross-chain",
-    "1inch",
-    "fusion",
     "ethereum",
     "polkadot",
+    "1inch",
+    "fusion",
+    "defi",
+    "relayer",
+    "bridge",
     "htlc",
     "swap"
   ],
-  "author": "",
+  "author": "Your Name",
   "license": "MIT",
   "engines": {
     "node": ">=22"
   },
   "dependencies": {
-    "@1inch/byte-utils": "2.6.0",
-    "@1inch/cross-chain-sdk": "v0.1.15-rc.0",
+    "@1inch/byte-utils": "^2.6.0",
+    "@1inch/cross-chain-sdk": "^1.0.0",
     "@polkadot/api": "^16.4.2",
     "@polkadot/api-contract": "^16.4.2",
+    "@polkadot/extension-dapp": "^0.46.1",
     "@polkadot/keyring": "^13.2.1",
+    "@polkadot/types": "^10.0.0",
     "@polkadot/util": "^13.2.1",
     "@polkadot/util-crypto": "^13.2.1",
+    "@walletconnect/ethereum-provider": "^2.10.0",
     "axios": "^1.11.0",
+    "commander": "^11.0.0",
     "cors": "^2.8.5",
     "dotenv": "^17.2.1",
     "ethers": "^6.15.0",
+    "events": "^3.3.0",
     "express": "^5.1.0",
+    "prool": "^0.24.0",
     "winston": "^3.17.0",
-    "prool": "0.0.24",
-    "zod": "3.23.8"
+    "zod": "^3.23.8"
   },
   "devDependencies": {
     "@types/cors": "^2.8.17",
@@ -64,6 +80,7 @@
     "eslint-plugin-unused-imports": "^4.1.4",
     "jest": "^30.0.5",
     "prettier": "^3.2.5",
+    "rimraf": "^5.0.0",
     "ts-jest": "^29.1.4",
     "ts-node": "^10.9.2",
     "typescript": "^5.8.3"
@@ -115,5 +132,13 @@
     "singleQuote": true,
     "printWidth": 100,
     "tabWidth": 2
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-username/fusion-polkadot-relayer.git"
+  },
+  "bugs": {
+    "url": "https://github.com/your-username/fusion-polkadot-relayer/issues"
+  },
+  "homepage": "https://github.com/your-username/fusion-polkadot-relayer#readme"
 }
