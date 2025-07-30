@@ -2,6 +2,7 @@
   "extends": "@1inch/tsconfig",
   "compilerOptions": {
     "resolveJsonModule": true,
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
     "outDir": "./dist",
     /* Visit https://aka.ms/tsconfig to read more about this file */
 

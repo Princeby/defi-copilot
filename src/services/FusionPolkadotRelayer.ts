@@ -106,6 +106,20 @@ export interface RelayerBalances {
   polkadot: ChainBalances
 }
 
+// Helper function to check if we're in a browser environment
+const isBrowser = (): boolean => {
+  return typeof globalThis !== 'undefined' && 
+         typeof (globalThis as any).window !== 'undefined'
+}
+
+// Helper function to get ethereum provider safely
+const getEthereumProvider = (): any => {
+  if (!isBrowser()) {
+    return null
+  }
+  return (globalThis as any).window?.ethereum
+}
+
 export class FusionPolkadotRelayer extends EventEmitter {
   private ethWallet?: EthereumWallet
   private polkadotWallet?: PolkadotWallet
@@ -164,12 +178,13 @@ export class FusionPolkadotRelayer extends EventEmitter {
   // === Ethereum Wallet Implementations ===
 
   private async connectMetaMask(): Promise<EthereumWallet> {
-    if (typeof window === 'undefined' || !(window as any).ethereum) {
-      throw new Error('MetaMask not detected. Please install MetaMask.')
+    const ethereum = getEthereumProvider()
+    
+    if (!ethereum) {
+      throw new Error('MetaMask not detected. Please install MetaMask or run in browser environment.')
     }
 
     try {
-      const ethereum = (window as any).ethereum
       await ethereum.request({ method: 'eth_requestAccounts' })
       
       const provider = new BrowserProvider(ethereum)
@@ -222,11 +237,13 @@ export class FusionPolkadotRelayer extends EventEmitter {
   }
 
   private async connectInjectedEthereum(): Promise<EthereumWallet> {
-    if (typeof window === 'undefined' || !(window as any).ethereum) {
-      throw new Error('No injected Ethereum provider found')
+    const ethereum = getEthereumProvider()
+    
+    if (!ethereum) {
+      throw new Error('No injected Ethereum provider found. Please run in browser environment.')
     }
 
-    const provider = new BrowserProvider((window as any).ethereum)
+    const provider = new BrowserProvider(ethereum)
     const signer = await provider.getSigner()
     const address = await signer.getAddress()
     
@@ -242,7 +259,7 @@ export class FusionPolkadotRelayer extends EventEmitter {
   // === Polkadot Wallet Implementations ===
 
   private async connectPolkadotJS(): Promise<PolkadotWallet> {
-    if (typeof window === 'undefined') {
+    if (!isBrowser()) {
       throw new Error('Polkadot.js extension only works in browser environment')
     }
 
@@ -255,10 +272,16 @@ export class FusionPolkadotRelayer extends EventEmitter {
   }
 
   private async connectTalisman(): Promise<PolkadotWallet> {
+    if (!isBrowser()) {
+      throw new Error('Talisman connection requires browser environment')
+    }
     throw new Error('Talisman connection requires browser environment and additional setup')
   }
 
   private async connectSubWallet(): Promise<PolkadotWallet> {
+    if (!isBrowser()) {
+      throw new Error('SubWallet connection requires browser environment')
+    }
     throw new Error('SubWallet connection requires browser environment and additional setup')
   }
 
@@ -286,6 +309,9 @@ export class FusionPolkadotRelayer extends EventEmitter {
   }
 
   private async connectInjectedPolkadot(): Promise<PolkadotWallet> {
+    if (!isBrowser()) {
+      throw new Error('Injected Polkadot wallet requires browser environment')
+    }
     throw new Error('Injected Polkadot wallet requires browser environment and additional setup')
   }
 
@@ -333,7 +359,7 @@ export class FusionPolkadotRelayer extends EventEmitter {
     console.log(`📍 Polkadot address: ${this.polkadotWallet.address}`)
   }
 
-  // === MISSING METHODS - These were causing the compilation errors ===
+  // === Service Methods ===
 
   async start(): Promise<void> {
     if (this.isRunning) {
@@ -523,7 +549,7 @@ export class FusionPolkadotRelayer extends EventEmitter {
     }
   }
 
-  private setupEventListeners(): void {
+  private setupEventListeners(): Promise<void> {
     this.on('orderCreated', (order) => {
       console.log(`📝 Order created event: ${order.orderHash}`)
     })
@@ -535,5 +561,7 @@ export class FusionPolkadotRelayer extends EventEmitter {
     this.on('swapExecuted', (order) => {
       console.log(`⚡ Swap executed event: ${order.orderHash}`)
     })
+
+    return Promise.resolve()
   }
 }

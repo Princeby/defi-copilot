@@ -12,15 +12,14 @@ import { createInterface } from 'readline'
 // Load environment variables
 config()
 
-// Default configurations for different wallet types
 const serverConfig: WalletConfig = {
   ethereum: {
     type: 'private-key',
     rpcUrl: process.env.ETHEREUM_RPC_URL || 'http://localhost:8545',
-    privateKey: process.env.ETHEREUM_PRIVATE_KEY || '0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d',
+    privateKey: process.env.ETHEREUM_PRIVATE_KEY || '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80',
     fusionFactoryAddress: process.env.FUSION_FACTORY_ADDRESS || '0x111111125421ca6dc452d289314280a0f8842a65',
     resolverAddress: process.env.ETHEREUM_RESOLVER_ADDRESS || '',
-    chainId: parseInt(process.env.ETHEREUM_CHAIN_ID || '1')
+    chainId: parseInt(process.env.ETHEREUM_CHAIN_ID || '31337')
   },
   polkadot: {
     type: 'mnemonic',
