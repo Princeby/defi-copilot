@@ -7,8 +7,8 @@
     "fusion-polkadot-relayer": "./dist/app.js"
   },
   "scripts": {
-    "build": "npm run build:contracts && tsc", 
-    "build:contracts": "cd contracts/lib/cross-chain-swap/lib/solidity-utils && npx hardhat compile && cd ../../../../../..", 
+    "build": "npm run build:contracts && tsc",
+    "build:contracts": "cd contracts/lib/cross-chain-swap/lib/solidity-utils && npx hardhat compile && cd ../../../../../..",
     "start": "node dist/index.js start",
     "dev": "ts-node src/index.ts start",
     "test": "jest",
@@ -65,6 +65,7 @@
     "events": "^3.3.0",
     "express": "^5.1.0",
     "express-validator": "^7.2.1",
+    "inquirer": "^12.9.0",
     "prool": "0.0.24",
     "winston": "^3.17.0",
     "zod": "^3.23.8"
