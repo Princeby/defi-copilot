@@ -3,13 +3,16 @@ import '@nomicfoundation/hardhat-ethers';
 import '@nomicfoundation/hardhat-chai-matchers';
 import 'hardhat-gas-reporter';
 import 'hardhat-deploy';
-import '@nomicfoundation/hardhat-verify';
+import '@nomicfoundation/hardhat-verify'; // This plugin adds the 'etherscan' config property
 import 'solidity-docgen';
-require('solidity-coverage'); // require because no TS typings available
+require('solidity-coverage');
 import dotenv from 'dotenv';
 import { HardhatUserConfig } from 'hardhat/config';
 import { HardhatNetworkUserConfig } from 'hardhat/types';
 import { Networks, getNetwork } from './hardhat-setup';
+
+// By importing this, we ensure the HardhatUserConfig is correctly extended
+import type { EtherscanConfig } from '@nomicfoundation/hardhat-verify/src/types';
 
 dotenv.config();
 
@@ -19,7 +22,7 @@ declare module 'hardhat/types/runtime' {
     }
 }
 
-const { networks, etherscan } = new Networks();
+const networkSetup = new Networks();
 
 const config: HardhatUserConfig = {
     solidity: {
@@ -29,12 +32,13 @@ const config: HardhatUserConfig = {
                 enabled: true,
                 runs: 1000000,
             },
-            evmVersion: (networks[getNetwork()] as HardhatNetworkUserConfig)?.hardfork || 'cancun',
+            evmVersion: (networkSetup.networks[getNetwork()] as HardhatNetworkUserConfig)?.hardfork || 'cancun',
             viaIR: true,
         },
     },
-    etherscan,
-    networks,
+    // The 'etherscan' property is now fully typed and recognized.
+    etherscan: networkSetup.etherscan,
+    networks: networkSetup.networks,
     gasReporter: {
         enabled: true,
     },

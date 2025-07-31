@@ -173,14 +173,14 @@ describe('UniERC20', function () {
 
         it('uni transfer, insufficient balance', async function () {
             const { wrapper } = await loadFixture(deployMocks);
-            await expect(wrapper.transfer(signer2, 100, { value: 99 })).to.be.rejectedWith(
+            await expect(wrapper.transfer(signer2, 100, { value: 99 })).to.be.revertedWith(
                 'InsufficientBalance',
             );
         });
 
         it('uni approve must fail', async function () {
             const { wrapper } = await loadFixture(deployMocks);
-            await expect(wrapper.connect(signer2).approve(signer1, 100)).to.be.rejectedWith(
+            await expect(wrapper.connect(signer2).approve(signer1, 100)).to.be.revertedWith(
                 'ApproveCalledOnETH',
             );
         });
@@ -197,7 +197,7 @@ describe('UniERC20', function () {
             const { wrapper } = await loadFixture(deployMocks);
             await expect(
                 wrapper.connect(signer2).transferFrom(signer1, wrapper, 100, { value: 100 }),
-            ).to.be.rejectedWith('FromIsNotSender');
+            ).to.be.revertedWith('FromIsNotSender');
         });
 
         it('uni transfer from, fail, receiver is not contract', async function () {
@@ -206,7 +206,7 @@ describe('UniERC20', function () {
                 wrapper.transferFrom(signer1, signer2, 100, {
                     value: 100,
                 }),
-            ).to.be.rejectedWith('ToIsNotThis');
+            ).to.be.revertedWith('ToIsNotThis');
         });
 
         it('uni name', async function () {
@@ -235,7 +235,7 @@ describe('UniERC20', function () {
                 wrapper.transfer(receiver, 100, {
                     value: 100,
                 }),
-            ).to.eventually.be.rejectedWith('ETHTransferFailed');
+            ).to.be.revertedWith('ETHTransferFailed');
         });
 
         it('uni failed transferFrom', async function () {
@@ -244,7 +244,7 @@ describe('UniERC20', function () {
                 receiver.transfer(wrapper, 100, {
                     value: 101n,
                 }),
-            ).to.eventually.be.rejectedWith('ETHTransferFailed');
+            ).to.be.revertedWith('ETHTransferFailed');
         });
     });
 

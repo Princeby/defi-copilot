@@ -1,6 +1,26 @@
-// src/api/validators/SwapValidation.ts
+// src/validators/SwapValidation.ts
 import { body, query, param, ValidationChain } from 'express-validator'
 import { isAddress } from 'ethers'
+
+// Define interfaces for better type safety
+interface SwapQuery {
+  srcToken?: string;
+  dstToken?: string;
+  direction?: 'EthereumToPolkadot' | 'PolkadotToEthereum';
+  amount?: string;
+  slippageTolerance?: string;
+}
+
+interface SwapBody {
+  srcToken?: string;
+  dstToken?: string;
+  direction?: 'EthereumToPolkadot' | 'PolkadotToEthereum';
+  srcAmount?: string;
+  dstAmount?: string;
+  walletAddress?: string;
+  deadline?: string;
+  slippageTolerance?: string;
+}
 
 export class SwapValidation {
   
@@ -50,14 +70,12 @@ export class SwapValidation {
         .notEmpty()
         .withMessage('Wallet address is required')
         .custom((value, { req }) => {
-          const direction = req.body.direction
+          const { direction } = req.body as SwapBody
           
-          // For Ethereum addresses, validate with ethers
           if (direction === 'EthereumToPolkadot' && !isAddress(value)) {
             throw new Error('Invalid Ethereum wallet address')
           }
           
-          // For Polkadot addresses, basic validation
           if (direction === 'PolkadotToEthereum') {
             if ((!value.startsWith('1') && !value.startsWith('5') && !value.startsWith('15')) ||
                 value.length < 47 || value.length > 48) {
@@ -78,7 +96,6 @@ export class SwapValidation {
         .isFloat({ min: 0.1, max: 10 })
         .withMessage('Slippage tolerance must be between 0.1% and 10%'),
 
-      // Apply additional custom validations
       SwapValidation.validateTokenAddress(),
       SwapValidation.validateSwapAmount(),
       SwapValidation.validateDeadline()
@@ -122,19 +139,24 @@ export class SwapValidation {
         .isFloat({ min: 0.1, max: 10 })
         .withMessage('Slippage tolerance must be between 0.1% and 10%'),
 
-      // Custom validation for token addresses in query
       query().custom((value, { req }) => {
-        const { srcToken, dstToken, direction } = req.query
+        // FIX APPLIED HERE:
+        // Use `|| {}` to provide a default empty object. This prevents the error
+        // when trying to destructure properties from a potentially undefined `req.query`.
+        const { srcToken, dstToken, direction } = (req.query || {}) as SwapQuery;
         
-        // Validate Ethereum token addresses
+        if (!direction || !srcToken || !dstToken) {
+          throw new Error('Missing required query parameters: direction, srcToken, dstToken')
+        }
+        
         if (direction === 'EthereumToPolkadot') {
-          if (srcToken !== 'ETH' && !isAddress(srcToken as string)) {
+          if (srcToken !== 'ETH' && !isAddress(srcToken)) {
             throw new Error('Invalid Ethereum source token address')
           }
         }
         
         if (direction === 'PolkadotToEthereum') {
-          if (dstToken !== 'ETH' && !isAddress(dstToken as string)) {
+          if (dstToken !== 'ETH' && !isAddress(dstToken)) {
             throw new Error('Invalid Ethereum destination token address')
           }
         }
@@ -205,10 +227,8 @@ export class SwapValidation {
       query('maker')
         .optional()
         .custom((value) => {
-          // Check if it's a valid Ethereum address or Polkadot address
           if (isAddress(value)) return true
           
-          // Basic Polkadot address validation
           if ((value.startsWith('1') || value.startsWith('5') || value.startsWith('15')) &&
               value.length >= 47 && value.length <= 48) {
             return true
@@ -246,12 +266,14 @@ export class SwapValidation {
     ]
   }
 
-  // Custom validation helpers
   static validateTokenAddress(): ValidationChain {
     return body().custom((value, { req }) => {
-      const { srcToken, dstToken, direction } = req.body
+      const { srcToken, dstToken, direction } = req.body as SwapBody
       
-      // Validate Ethereum token addresses
+      if (!direction || !srcToken || !dstToken) {
+        throw new Error('Missing required body parameters')
+      }
+      
       if (direction === 'EthereumToPolkadot') {
         if (srcToken !== 'ETH' && !isAddress(srcToken)) {
           throw new Error('Invalid Ethereum source token address')
@@ -264,7 +286,6 @@ export class SwapValidation {
         }
       }
       
-      // Validate that source and destination tokens are different
       if (srcToken === dstToken) {
         throw new Error('Source and destination tokens cannot be the same')
       }
@@ -275,18 +296,24 @@ export class SwapValidation {
 
   static validateSwapAmount(): ValidationChain {
     return body().custom((value, { req }) => {
-      const { srcAmount, dstAmount } = req.body
+      const { srcAmount, dstAmount } = req.body as SwapBody
+      
+      if (!srcAmount || !dstAmount) {
+        throw new Error('Source and destination amounts are required')
+      }
       
       const srcAmountNum = parseFloat(srcAmount)
       const dstAmountNum = parseFloat(dstAmount)
       
-      // Check for reasonable exchange rate (prevent manipulation)
+      if (isNaN(srcAmountNum) || isNaN(dstAmountNum)) {
+        throw new Error('Invalid amount format')
+      }
+      
       const rate = dstAmountNum / srcAmountNum
       if (rate < 0.01 || rate > 100) {
         throw new Error('Exchange rate seems unreasonable. Please check amounts.')
       }
       
-      // Validate precision (max 18 decimal places)
       const srcDecimals = (srcAmount.toString().split('.')[1] || '').length
       const dstDecimals = (dstAmount.toString().split('.')[1] || '').length
       
@@ -301,20 +328,23 @@ export class SwapValidation {
   static validateDeadline(): ValidationChain {
     return body('deadline').custom((value, { req }) => {
       if (value) {
-        const deadlineTimestamp = parseInt(value)
+        const deadlineNum = parseInt(value)
+        
+        if (isNaN(deadlineNum)) {
+          throw new Error('Deadline must be a valid number')
+        }
+        
         const now = Math.floor(Date.now() / 1000)
         
-        if (deadlineTimestamp <= now) {
+        if (deadlineNum <= now) {
           throw new Error('Deadline must be in the future')
         }
         
-        // Max 24 hours from now
-        if (deadlineTimestamp > now + 86400) {
+        if (deadlineNum > now + 86400) {
           throw new Error('Deadline cannot be more than 24 hours from now')
         }
         
-        // Min 5 minutes from now
-        if (deadlineTimestamp < now + 300) {
+        if (deadlineNum < now + 300) {
           throw new Error('Deadline must be at least 5 minutes from now')
         }
       }
@@ -323,12 +353,10 @@ export class SwapValidation {
     })
   }
 
-  // Sanitization helpers
   static sanitizeNumericInput(): ValidationChain {
     return body(['srcAmount', 'dstAmount', 'slippageTolerance'])
       .customSanitizer((value) => {
         if (typeof value === 'string') {
-          // Remove any non-numeric characters except decimal point
           return value.replace(/[^0-9.]/g, '')
         }
         return value
@@ -349,19 +377,18 @@ export class SwapValidation {
     return param('orderHash')
       .customSanitizer((value) => {
         if (typeof value === 'string') {
-          // Ensure it starts with 0x
           return value.startsWith('0x') ? value.toLowerCase() : `0x${value.toLowerCase()}`
         }
         return value
       })
   }
 
-  // Rate limiting validation
   static validateRateLimit(): ValidationChain {
     return body().custom((value, { req }) => {
-      // This would integrate with your rate limiting middleware
-      // we'll do basic validation
-      const userAgent = req.headers?.['user-agent']
+      // FIX APPLIED HERE:
+      // Use optional chaining `?.` to safely access a property that might
+      // not exist on a potentially undefined `req.headers` object.
+      const userAgent = req.headers?.['user-agent'];
       const ip = req.ip
       
       if (!userAgent || userAgent.length < 10) {
@@ -372,14 +399,13 @@ export class SwapValidation {
     })
   }
 
-  // Security validations
   static validateSecurityHeaders(): ValidationChain {
     return body().custom((value, { req }) => {
-      // Check for required security headers
-      const origin = req.headers.origin
-      const referer = req.headers.referer
+      // FIX APPLIED HERE:
+      // Use optional chaining `?.` for safe access.
+      const origin = req.headers?.origin;
+      const referer = req.headers?.referer;
       
-      // In production, you might want to validate allowed origins
       if (process.env.NODE_ENV === 'production') {
         const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || []
         if (origin && allowedOrigins.length > 0 && !allowedOrigins.includes(origin)) {

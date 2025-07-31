@@ -1,7 +1,7 @@
 import { ether, time, constants } from '../src/prelude';
 import { timeIncreaseTo, fixSignature, signMessage, trackReceivedTokenAndTx, countInstructions, deployContract, deployAndGetContract, deployContractFromBytecode, getEthPrice } from '../src/utils';
 import { expect } from '../src/expect';
-import hre, { deployments, ethers } from 'hardhat';
+import hre, { ethers } from 'hardhat';
 import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
 import { SignerWithAddress } from '@nomicfoundation/hardhat-ethers/signers';
 import { getBytes, hexlify, randomBytes, toUtf8Bytes, EventLog, ContractTransactionReceipt } from 'ethers';
@@ -33,7 +33,7 @@ describe('timeIncreaseTo', function () {
     });
 
     it('should be thrown with increase time to a moment in the past', async function () {
-        await expect(shouldIncrease(-1000)).to.be.rejectedWith(
+        await expect(shouldIncrease(-1000)).to.be.revertedWith(
             /Timestamp \d+ is lower than the previous block's timestamp \d+/,
         );
     });
@@ -226,7 +226,7 @@ describe('utils', function () {
         });
 
         it('should throw error with incorrect token symbol', async function () {
-            await expect(getEthPrice('INVALID_SYMBOL')).to.be.rejectedWith('Failed to parse price from Coinbase API');
+            await expect(getEthPrice('INVALID_SYMBOL')).to.be.revertedWith('Failed to parse price from Coinbase API');
         });
     });
 });

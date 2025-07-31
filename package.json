@@ -7,7 +7,8 @@
     "fusion-polkadot-relayer": "./dist/app.js"
   },
   "scripts": {
-    "build": "tsc",
+    "build": "npm run build:contracts && tsc", 
+    "build:contracts": "cd contracts/lib/cross-chain-swap/lib/solidity-utils && npx hardhat compile && cd ../../../../../..", 
     "start": "node dist/index.js start",
     "dev": "ts-node src/index.ts start",
     "test": "jest",
@@ -54,6 +55,7 @@
     "@polkadot/types": "^16.4.3",
     "@polkadot/util": "^13.5.4",
     "@polkadot/util-crypto": "^13.5.4",
+    "@uniswap/permit2-sdk": "^1.3.1",
     "@walletconnect/ethereum-provider": "^2.10.0",
     "axios": "^1.11.0",
     "commander": "^11.1.0",
@@ -68,8 +70,11 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
+    "@1inch/tsconfig": "^1.0.9",
+    "@metamask/eth-sig-util": "^8.2.0",
     "@nomicfoundation/hardhat-ethers": "^3.1.0",
     "@nomicfoundation/hardhat-network-helpers": "^1.1.0",
+    "@nomicfoundation/hardhat-verify": "^2.1.0",
     "@types/chai": "^5.2.2",
     "@types/commander": "^2.12.0",
     "@types/cors": "^2.8.17",
@@ -86,8 +91,10 @@
     "eslint-plugin-prettier": "^5.2.1",
     "eslint-plugin-unused-imports": "^4.1.4",
     "hardhat": "^2.26.1",
+    "hardhat-deploy": "^1.0.4",
     "jest": "^30.0.5",
     "mocha": "^11.7.1",
+    "mocha-chai-jest-snapshot": "^1.1.6",
     "prettier": "^3.2.5",
     "rimraf": "^5.0.0",
     "ts-jest": "^29.1.4",

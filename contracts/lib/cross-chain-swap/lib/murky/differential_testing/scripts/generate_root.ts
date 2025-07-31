@@ -11,9 +11,8 @@ for (var i = 0; i < 129; ++i) {
 var dataAsBuffer = data.map(b => toBuffer(b));
 
 const tree = new MerkleTree(dataAsBuffer);
-process.stdout.write(ethers.utils.defaultAbiCoder.encode(['bytes32'], [tree.getRoot()]));
-const encodedData = ethers.utils.defaultAbiCoder.encode(["bytes32[129]"], [data]);
-if (!fs.existsSync("../data/")) {
+process.stdout.write(ethers.AbiCoder.defaultAbiCoder().encode(['bytes32'], [tree.getRoot()]));
+const encodedData = ethers.AbiCoder.defaultAbiCoder().encode(["bytes32[129]"], [data]);if (!fs.existsSync("../data/")) {
     fs.mkdirSync("../data/");
 }
 fs.writeFileSync("../data/merkle_input.txt", encodedData);
