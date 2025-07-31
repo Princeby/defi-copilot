@@ -62,6 +62,7 @@
     "ethers": "^6.15.0",
     "events": "^3.3.0",
     "express": "^5.1.0",
+    "express-validator": "^7.2.1",
     "prool": "0.0.24",
     "winston": "^3.17.0",
     "zod": "^3.23.8"
