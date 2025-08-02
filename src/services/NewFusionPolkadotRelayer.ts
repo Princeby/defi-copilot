@@ -17,7 +17,7 @@ import {
 } from 'ethers'
 import { createHash, randomBytes } from 'crypto'
 import Sdk from '@1inch/cross-chain-sdk'
-import { CrossChainOrder, HashLock, Address } from '@1inch/cross-chain-sdk'
+import { CrossChainOrder, HashLock, Address, TimeLocks, AuctionDetails, randBigInt } from '@1inch/cross-chain-sdk'
 import { uint8ArrayToHex, UINT_40_MAX } from '@1inch/byte-utils'
 
 import ERC20_ABI from '../abi/ERC20.sol/ERC20.json'
@@ -273,19 +273,95 @@ export class NewFusionPolkadotRelayer extends EventEmitter {
   /**
    * Creates a cross-chain order and returns the order hash
    */
-  async createCrossChainOrder(params: CrossChainOrderParams): Promise<string> {
+ /**
+ * Fixed createCrossChainOrder method with proper whitelist handling
+ */
+ async createCrossChainOrder(params: CrossChainOrderParams): Promise<string> {
     console.log('📝 Creating CrossChain order...')
     
     if (!this.ethWallet || !this.polkadotWallet) {
       throw new Error('Wallets not connected')
     }
-
+  
     // Generate secret and hashlock
     const secret = params.hashLock || uint8ArrayToHex(randomBytes(32))
     const hashLock = HashLock.forSingleFill(secret)
-
+  
     try {
-      // Create 1inch CrossChainOrder
+      const currentTimestamp = BigInt(Math.floor(Date.now() / 1000))
+      
+      // Ensure whitelist timestamps are valid and within reasonable bounds
+      const whitelist = params.whitelist && params.whitelist.length > 0 
+        ? params.whitelist.map((w, index) => {
+            // Ensure allowFrom is not too far in the past or future
+            let allowFrom = w.allowFrom
+            
+            // If allowFrom is 0 (genesis), keep it as is
+            if (allowFrom === BigInt(0)) {
+              allowFrom = BigInt(0)
+            } else {
+              // Ensure allowFrom is within 1 hour of current time (past or future)
+              const maxDiff = BigInt(3600) // 1 hour in seconds
+              const minAllowFrom = currentTimestamp - maxDiff
+              const maxAllowFrom = currentTimestamp + maxDiff
+              
+              if (allowFrom < minAllowFrom) {
+                allowFrom = currentTimestamp // Use current time if too far in past
+              } else if (allowFrom > maxAllowFrom) {
+                allowFrom = currentTimestamp + BigInt(60 * index) // Stagger by 1 minute per entry
+              }
+            }
+            
+            return {
+              address: new Address(w.address),
+              allowFrom: allowFrom
+            }
+          })
+        : [
+            {
+              address: new Address(this.ethWallet.address), // Add relayer as default resolver
+              allowFrom: BigInt(0) // Genesis time is always safe
+            }
+          ]
+  
+      // Ensure auction points have reasonable timing
+      const auctionStartTime = params.auction?.startTime || currentTimestamp
+      const auctionDuration = params.auction?.duration || BigInt(3600)
+      
+      // Create auction points with validated timing
+      const auctionPoints = params.auction?.points || [
+        { coefficient: 0, delay: 0 }, // Start immediately
+        { coefficient: 25, delay: 15 }, // 25% premium after 15 seconds
+        { coefficient: 50, delay: 30 }, // 50% premium after 30 seconds
+        { coefficient: 100, delay: 60 } // 100% premium after 60 seconds
+      ]
+  
+      // Validate that auction points don't exceed duration
+      const validatedPoints = auctionPoints.map(point => ({
+        coefficient: point.coefficient,
+        delay: Math.min(point.delay, Number(auctionDuration))
+      }))
+  
+      // Create TimeLocks with reasonable values
+      const timeLocks = params.timeLocks || {
+        srcWithdrawal: BigInt(10),
+        srcPublicWithdrawal: BigInt(120),
+        srcCancellation: BigInt(121),
+        srcPublicCancellation: BigInt(122),
+        dstWithdrawal: BigInt(10),
+        dstPublicWithdrawal: BigInt(100),
+        dstCancellation: BigInt(101)
+      }
+  
+      console.log('🕐 Using timestamps:')
+      console.log(`   Current: ${currentTimestamp}`)
+      console.log(`   Auction start: ${auctionStartTime}`)
+      console.log(`   Whitelist entries: ${whitelist.length}`)
+      whitelist.forEach((w, i) => {
+        console.log(`     ${i + 1}. ${w.address.toString()}: allowFrom=${w.allowFrom}`)
+      })
+  
+      // Create 1inch CrossChainOrder with validated timestamps
       const crossChainOrder = CrossChainOrder.new(
         new Address(this.config.ethereum.escrowFactoryAddress),
         {
@@ -298,40 +374,29 @@ export class NewFusionPolkadotRelayer extends EventEmitter {
         },
         {
           hashLock,
-          timeLocks: Sdk.TimeLocks.new(params.timeLocks || {
-            srcWithdrawal: 10n,
-            srcPublicWithdrawal: 120n,
-            srcCancellation: 121n,
-            srcPublicCancellation: 122n,
-            dstWithdrawal: 10n,
-            dstPublicWithdrawal: 100n,
-            dstCancellation: 101n
-          }),
+          timeLocks: TimeLocks.new(timeLocks),
           srcChainId: this.config.ethereum.chainId,
           dstChainId: this.config.polkadot.parachainId || 1000,
           srcSafetyDeposit: this.config.relayer.safetyDeposit,
           dstSafetyDeposit: this.config.relayer.safetyDeposit
         },
         {
-          auction: new Sdk.AuctionDetails({
+          auction: new AuctionDetails({
             initialRateBump: params.auction?.initialRateBump || 0,
-            points: [],
-            duration: params.auction?.duration || 120n,
-            startTime: params.auction?.startTime || BigInt(Math.floor(Date.now() / 1000))
+            points: validatedPoints,
+            duration: auctionDuration,
+            startTime: auctionStartTime
           }),
-          whitelist: params.whitelist?.map(w => ({
-            address: new Address(w.address),
-            allowFrom: w.allowFrom
-          })) || [],
-          resolvingStartTime: 0n
+          whitelist: whitelist,
+          resolvingStartTime: BigInt(0)
         },
         {
-          nonce: Sdk.randBigInt(UINT_40_MAX),
+          nonce: randBigInt(UINT_40_MAX),
           allowPartialFills: params.allowPartialFills || false,
           allowMultipleFills: params.allowMultipleFills || false
         }
       )
-
+  
       const orderHash = crossChainOrder.getOrderHash(this.config.ethereum.chainId)
       
       // Create order record
@@ -352,15 +417,15 @@ export class NewFusionPolkadotRelayer extends EventEmitter {
         srcChainId: this.config.ethereum.chainId,
         dstChainId: this.config.polkadot.parachainId || 1000
       }
-
+  
       this.orders.set(orderHash, order)
       this.secrets.set(orderHash, secret)
-
+  
       this.emit('orderCreated', order)
       console.log(`✅ CrossChain order created: ${orderHash}`)
       
       return orderHash
-
+  
     } catch (error) {
       console.error('❌ Failed to create CrossChain order:', error)
       throw error

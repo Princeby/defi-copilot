@@ -253,17 +253,41 @@ program
         makingAmount: amount,
         takingAmount: dstAmount,
         makerAsset: direction === 'EthereumToPolkadot' ? 
-          '0xA0b86a33E6441E8c0Ec9cA7EB2fBe3Ed8c93De2f' : // USDC
-          'DOT',
+          '0x0000000000000000000000000000000000000001' : // USDC address
+          '0x0000000000000000000000000000000000000001', // DOT placeholder
         takerAsset: direction === 'EthereumToPolkadot' ? 
-          'DOT' : 
-          '0xA0b86a33E6441E8c0Ec9cA7EB2fBe3Ed8c93De2f', // USDC
+          '0x0000000000000000000000000000000000000001' : // DOT placeholder
+          '0x0000000000000000000000000000000000000001', // USDC address
         allowPartialFills: false,
         allowMultipleFills: false,
         auction: {
           initialRateBump: 0,
           duration: 3600n,
-          startTime: BigInt(Math.floor(Date.now() / 1000))
+          startTime: BigInt(Math.floor(Date.now() / 1000)),
+          points: [
+            { coefficient: 0, delay: 0 }, // Start point
+            { coefficient: 50, delay: 30 }, // Mid point
+            { coefficient: 100, delay: 60 } // End point
+          ]
+        },
+        whitelist: [
+          {
+            address: '0x70997970C51812dc3A010C7d01b50e0d17dc79C8', // Relayer address
+            allowFrom: BigInt(0) // Allow from genesis
+          },
+          {
+            address: '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266', // Another resolver address
+            allowFrom: BigInt(Math.floor(Date.now() / 1000)) // Allow from now
+          }
+        ],
+        timeLocks: {
+          srcWithdrawal: BigInt(10),
+          srcPublicWithdrawal: BigInt(120),
+          srcCancellation: BigInt(121),
+          srcPublicCancellation: BigInt(122),
+          dstWithdrawal: BigInt(10),
+          dstPublicWithdrawal: BigInt(100),
+          dstCancellation: BigInt(101)
         }
       }
       
