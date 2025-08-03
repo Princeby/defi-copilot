@@ -59,10 +59,24 @@ The project integrates Polkadot and Ethereum ecosystems using the following comp
 - Jest-based tests simulate single fills, multiple fills (100% and 50%), and cancellations.
 - Uses Anvil (prool) for forked testnets (Ethereum Sepolia, Polkadot Rococo).
 
-### UI
+### ENV
+ETHEREUM_RPC_URL=http://localhost:8545
+POLKADOT_WS_URL=wss://rpc.shibuya.astar.network
 
-- A minimal React/TypeScript UI displays order status and allows users to trigger withdrawals.
+ETHEREUM_PRIVATE_KEY=0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
+POLKADOT_MNEMONIC=bottom drive obey lake curtain smoke basket hold race lonely fit walk
+LIMIT_ORDER_PROTOCOL_ADDRESS=0x3456789012345678901234567890123456789012
 
+ETHEREUM_CHAIN_ID=31337
+
+FUSION_FACTORY_ADDRESS=0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0
+ETHEREUM_RESOLVER_ADDRESS=0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9
+
+POLKADOT_ESCROW_ADDRESS=XR2RVPmdBABfZNEWrQRLTzj7NGqiUfQqJqtRpnRtRbpGWBP
+POLKADOT_RESOLVER_ADDRESS=W4tVmiw832T4b5116n2J9EQybV36q8hwJSxg2gcKgAWVuEH
+
+SRC_CHAIN_CREATE_FORK=false
+DST_CHAIN_CREATE_FORK=false
 ## Prerequisites
 
 - **Node.js** (v18 or higher)
