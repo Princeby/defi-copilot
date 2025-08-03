@@ -10,7 +10,7 @@
     "build": "npm run build:contracts && tsc",
     "build:contracts": "cd contracts/lib/cross-chain-swap/lib/solidity-utils && npx hardhat compile && cd ../../../../../..",
     "start": "node dist/index.js start",
-    "dev": "ts-node src/index.ts start",
+    "dev": "npx ts-node src/services/demo.ts full-demo",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",

@@ -1,0 +1,2445 @@
+{
+  "source": {
+    "hash": "0x19878337d060422591f94fb32d2ae9c78999d9bcd92bd52f61b2dbefe7e6dbeb",
+    "language": "ink! 5.1.1",
+    "compiler": "rustc 1.88.0",
+    "build_info": {
+      "build_mode": "Release",
+      "cargo_contract_version": "4.1.1",
+      "rust_toolchain": "stable-aarch64-apple-darwin",
+      "wasm_opt_settings": {
+        "keep_debug_symbols": false,
+        "optimization_passes": "Z"
+      }
+    }
+  },
+  "contract": {
+    "name": "polkadot_resolver",
+    "version": "0.1.0",
+    "authors": [
+      "[your_name] <[your_email]>"
+    ]
+  },
+  "image": null,
+  "spec": {
+    "constructors": [
+      {
+        "args": [
+          {
+            "label": "escrow_factory",
+            "type": {
+              "displayName": [
+                "AccountId"
+              ],
+              "type": 0
+            }
+          },
+          {
+            "label": "ethereum_resolver",
+            "type": {
+              "displayName": [],
+              "type": 22
+            }
+          },
+          {
+            "label": "min_safety_deposit",
+            "type": {
+              "displayName": [
+                "Balance"
+              ],
+              "type": 3
+            }
+          }
+        ],
+        "default": false,
+        "docs": [],
+        "label": "new",
+        "payable": false,
+        "returnType": {
+          "displayName": [
+            "ink_primitives",
+            "ConstructorResult"
+          ],
+          "type": 23
+        },
+        "selector": "0x9bae9d5e"
+      }
+    ],
+    "docs": [
+      " Polkadot Resolver Contract "
+    ],
+    "environment": {
+      "accountId": {
+        "displayName": [
+          "AccountId"
+        ],
+        "type": 0
+      },
+      "balance": {
+        "displayName": [
+          "Balance"
+        ],
+        "type": 3
+      },
+      "blockNumber": {
+        "displayName": [
+          "BlockNumber"
+        ],
+        "type": 4
+      },
+      "chainExtension": {
+        "displayName": [
+          "ChainExtension"
+        ],
+        "type": 46
+      },
+      "hash": {
+        "displayName": [
+          "Hash"
+        ],
+        "type": 45
+      },
+      "maxEventTopics": 4,
+      "staticBufferSize": 16384,
+      "timestamp": {
+        "displayName": [
+          "Timestamp"
+        ],
+        "type": 5
+      }
+    },
+    "events": [
+      {
+        "args": [
+          {
+            "docs": [],
+            "indexed": true,
+            "label": "order_hash",
+            "type": {
+              "displayName": [],
+              "type": 1
+            }
+          },
+          {
+            "docs": [],
+            "indexed": true,
+            "label": "escrow_address",
+            "type": {
+              "displayName": [
+                "AccountId"
+              ],
+              "type": 0
+            }
+          },
+          {
+            "docs": [],
+            "indexed": false,
+            "label": "immutables",
+            "type": {
+              "displayName": [
+                "EscrowImmutables"
+              ],
+              "type": 7
+            }
+          },
+          {
+            "docs": [],
+            "indexed": false,
+            "label": "safety_deposit",
+            "type": {
+              "displayName": [
+                "Balance"
+              ],
+              "type": 3
+            }
+          }
+        ],
+        "docs": [
+          "Events matching 1inch pattern"
+        ],
+        "label": "SrcEscrowDeployed",
+        "module_path": "polkadot_resolver::polkadot_resolver",
+        "signature_topic": "0xda0154c0592859b137e1494474b7f5d5844693910cf75656706befb4821ffa0e"
+      },
+      {
+        "args": [
+          {
+            "docs": [],
+            "indexed": true,
+            "label": "order_hash",
+            "type": {
+              "displayName": [],
+              "type": 1
+            }
+          },
+          {
+            "docs": [],
+            "indexed": true,
+            "label": "escrow_address",
+            "type": {
+              "displayName": [
+                "AccountId"
+              ],
+              "type": 0
+            }
+          },
+          {
+            "docs": [],
+            "indexed": false,
+            "label": "immutables",
+            "type": {
+              "displayName": [
+                "EscrowImmutables"
+              ],
+              "type": 7
+            }
+          },
+          {
+            "docs": [],
+            "indexed": false,
+            "label": "src_cancellation_timestamp",
+            "type": {
+              "displayName": [
+                "Timestamp"
+              ],
+              "type": 5
+            }
+          }
+        ],
+        "docs": [],
+        "label": "DstEscrowDeployed",
+        "module_path": "polkadot_resolver::polkadot_resolver",
+        "signature_topic": "0x0cfb2f59719c80cf667f2247b3dd7905ae468609dd61f6cf69fc459ebee6afaa"
+      },
+      {
+        "args": [
+          {
+            "docs": [],
+            "indexed": true,
+            "label": "order_hash",
+            "type": {
+              "displayName": [],
+              "type": 1
+            }
+          },
+          {
+            "docs": [],
+            "indexed": true,
+            "label": "escrow_address",
+            "type": {
+              "displayName": [
+                "AccountId"
+              ],
+              "type": 0
+            }
+          },
+          {
+            "docs": [],
+            "indexed": false,
+            "label": "secret",
+            "type": {
+              "displayName": [],
+              "type": 1
+            }
+          },
+          {
+            "docs": [],
+            "indexed": false,
+            "label": "amount",
+            "type": {
+              "displayName": [
+                "Balance"
+              ],
+              "type": 3
+            }
+          }
+        ],
+        "docs": [],
+        "label": "EscrowWithdrawal",
+        "module_path": "polkadot_resolver::polkadot_resolver",
+        "signature_topic": "0xd19743e810aac584f986533b04718e1098059628b800e75fbcfa6f4a164dcd05"
+      },
+      {
+        "args": [
+          {
+            "docs": [],
+            "indexed": true,
+            "label": "order_hash",
+            "type": {
+              "displayName": [],
+              "type": 1
+            }
+          },
+          {
+            "docs": [],
+            "indexed": true,
+            "label": "escrow_address",
+            "type": {
+              "displayName": [
+                "AccountId"
+              ],
+              "type": 0
+            }
+          },
+          {
+            "docs": [],
+            "indexed": false,
+            "label": "refund_amount",
+            "type": {
+              "displayName": [
+                "Balance"
+              ],
+              "type": 3
+            }
+          }
+        ],
+        "docs": [],
+        "label": "EscrowCancellation",
+        "module_path": "polkadot_resolver::polkadot_resolver",
+        "signature_topic": "0x172c4de133ad4664d2e65e701478c2a7fdaaf73890f59dd9dde9c7406bb733c2"
+      },
+      {
+        "args": [
+          {
+            "docs": [],
+            "indexed": true,
+            "label": "target",
+            "type": {
+              "displayName": [
+                "AccountId"
+              ],
+              "type": 0
+            }
+          },
+          {
+            "docs": [],
+            "indexed": false,
+            "label": "success",
+            "type": {
+              "displayName": [
+                "bool"
+              ],
+              "type": 17
+            }
+          },
+          {
+            "docs": [],
+            "indexed": false,
+            "label": "data_hash",
+            "type": {
+              "displayName": [],
+              "type": 1
+            }
+          }
+        ],
+        "docs": [],
+        "label": "ArbitraryCallExecuted",
+        "module_path": "polkadot_resolver::polkadot_resolver",
+        "signature_topic": "0x02992a487f0373210b5ef6f0949b38e83b43da1a18bcc338b015608bfb7ae088"
+      }
+    ],
+    "lang_error": {
+      "displayName": [
+        "ink",
+        "LangError"
+      ],
+      "type": 24
+    },
+    "messages": [
+      {
+        "args": [
+          {
+            "label": "immutables",
+            "type": {
+              "displayName": [
+                "EscrowImmutables"
+              ],
+              "type": 7
+            }
+          },
+          {
+            "label": "_order",
+            "type": {
+              "displayName": [
+                "Order"
+              ],
+              "type": 25
+            }
+          },
+          {
+            "label": "_signature",
+            "type": {
+              "displayName": [],
+              "type": 26
+            }
+          },
+          {
+            "label": "_amount",
+            "type": {
+              "displayName": [
+                "Balance"
+              ],
+              "type": 3
+            }
+          },
+          {
+            "label": "_taker_traits",
+            "type": {
+              "displayName": [
+                "TakerTraits"
+              ],
+              "type": 27
+            }
+          },
+          {
+            "label": "_args",
+            "type": {
+              "displayName": [
+                "Vec"
+              ],
+              "type": 28
+            }
+          }
+        ],
+        "default": false,
+        "docs": [
+          " Deploy source escrow "
+        ],
+        "label": "deploy_src",
+        "mutates": true,
+        "payable": true,
+        "returnType": {
+          "displayName": [
+            "ink",
+            "MessageResult"
+          ],
+          "type": 29
+        },
+        "selector": "0x6f623644"
+      },
+      {
+        "args": [
+          {
+            "label": "dst_immutables",
+            "type": {
+              "displayName": [
+                "EscrowImmutables"
+              ],
+              "type": 7
+            }
+          },
+          {
+            "label": "src_cancellation_timestamp",
+            "type": {
+              "displayName": [
+                "Timestamp"
+              ],
+              "type": 5
+            }
+          }
+        ],
+        "default": false,
+        "docs": [
+          " Deploy destination escrow "
+        ],
+        "label": "deploy_dst",
+        "mutates": true,
+        "payable": true,
+        "returnType": {
+          "displayName": [
+            "ink",
+            "MessageResult"
+          ],
+          "type": 29
+        },
+        "selector": "0xc0978087"
+      },
+      {
+        "args": [
+          {
+            "label": "order_hash",
+            "type": {
+              "displayName": [],
+              "type": 1
+            }
+          },
+          {
+            "label": "secret",
+            "type": {
+              "displayName": [],
+              "type": 1
+            }
+          },
+          {
+            "label": "immutables",
+            "type": {
+              "displayName": [
+                "EscrowImmutables"
+              ],
+              "type": 7
+            }
+          }
+        ],
+        "default": false,
+        "docs": [
+          " Withdraw from escrow "
+        ],
+        "label": "withdraw",
+        "mutates": true,
+        "payable": false,
+        "returnType": {
+          "displayName": [
+            "ink",
+            "MessageResult"
+          ],
+          "type": 32
+        },
+        "selector": "0x410fcc9d"
+      },
+      {
+        "args": [
+          {
+            "label": "order_hash",
+            "type": {
+              "displayName": [],
+              "type": 1
+            }
+          },
+          {
+            "label": "immutables",
+            "type": {
+              "displayName": [
+                "EscrowImmutables"
+              ],
+              "type": 7
+            }
+          }
+        ],
+        "default": false,
+        "docs": [
+          " Cancel escrow "
+        ],
+        "label": "cancel",
+        "mutates": true,
+        "payable": false,
+        "returnType": {
+          "displayName": [
+            "ink",
+            "MessageResult"
+          ],
+          "type": 32
+        },
+        "selector": "0x9796e9a7"
+      },
+      {
+        "args": [
+          {
+            "label": "targets",
+            "type": {
+              "displayName": [
+                "Vec"
+              ],
+              "type": 34
+            }
+          },
+          {
+            "label": "arguments",
+            "type": {
+              "displayName": [
+                "Vec"
+              ],
+              "type": 35
+            }
+          }
+        ],
+        "default": false,
+        "docs": [
+          " Arbitrary calls "
+        ],
+        "label": "arbitrary_calls",
+        "mutates": true,
+        "payable": false,
+        "returnType": {
+          "displayName": [
+            "ink",
+            "MessageResult"
+          ],
+          "type": 32
+        },
+        "selector": "0x41cb70ad"
+      },
+      {
+        "args": [
+          {
+            "label": "_order_hash",
+            "type": {
+              "displayName": [],
+              "type": 1
+            }
+          },
+          {
+            "label": "_resolver",
+            "type": {
+              "displayName": [
+                "AccountId"
+              ],
+              "type": 0
+            }
+          },
+          {
+            "label": "_hash_lock",
+            "type": {
+              "displayName": [],
+              "type": 1
+            }
+          },
+          {
+            "label": "_ethereum_escrow",
+            "type": {
+              "displayName": [],
+              "type": 22
+            }
+          }
+        ],
+        "default": false,
+        "docs": [
+          " Verify cross-chain message from Ethereum resolver"
+        ],
+        "label": "verify_ethereum_message",
+        "mutates": false,
+        "payable": false,
+        "returnType": {
+          "displayName": [
+            "ink",
+            "MessageResult"
+          ],
+          "type": 36
+        },
+        "selector": "0xa956c829"
+      },
+      {
+        "args": [
+          {
+            "label": "_order_hash",
+            "type": {
+              "displayName": [],
+              "type": 1
+            }
+          },
+          {
+            "label": "_secret",
+            "type": {
+              "displayName": [],
+              "type": 1
+            }
+          }
+        ],
+        "default": false,
+        "docs": [
+          " Process cross-chain withdrawal notification"
+        ],
+        "label": "process_ethereum_withdrawal",
+        "mutates": true,
+        "payable": false,
+        "returnType": {
+          "displayName": [
+            "ink",
+            "MessageResult"
+          ],
+          "type": 32
+        },
+        "selector": "0x452d36e6"
+      },
+      {
+        "args": [
+          {
+            "label": "order_hash",
+            "type": {
+              "displayName": [],
+              "type": 1
+            }
+          }
+        ],
+        "default": false,
+        "docs": [],
+        "label": "get_escrow_immutables",
+        "mutates": false,
+        "payable": false,
+        "returnType": {
+          "displayName": [
+            "ink",
+            "MessageResult"
+          ],
+          "type": 38
+        },
+        "selector": "0xfa626f65"
+      },
+      {
+        "args": [
+          {
+            "label": "order_hash",
+            "type": {
+              "displayName": [],
+              "type": 1
+            }
+          }
+        ],
+        "default": false,
+        "docs": [],
+        "label": "get_escrow_address",
+        "mutates": false,
+        "payable": false,
+        "returnType": {
+          "displayName": [
+            "ink",
+            "MessageResult"
+          ],
+          "type": 40
+        },
+        "selector": "0x2b681ed2"
+      },
+      {
+        "args": [],
+        "default": false,
+        "docs": [],
+        "label": "get_owner",
+        "mutates": false,
+        "payable": false,
+        "returnType": {
+          "displayName": [
+            "ink",
+            "MessageResult"
+          ],
+          "type": 42
+        },
+        "selector": "0x07fcd0b1"
+      },
+      {
+        "args": [],
+        "default": false,
+        "docs": [],
+        "label": "get_ethereum_resolver",
+        "mutates": false,
+        "payable": false,
+        "returnType": {
+          "displayName": [
+            "ink",
+            "MessageResult"
+          ],
+          "type": 43
+        },
+        "selector": "0xb2381891"
+      },
+      {
+        "args": [],
+        "default": false,
+        "docs": [],
+        "label": "get_total_escrows_created",
+        "mutates": false,
+        "payable": false,
+        "returnType": {
+          "displayName": [
+            "ink",
+            "MessageResult"
+          ],
+          "type": 44
+        },
+        "selector": "0xd05a124a"
+      },
+      {
+        "args": [
+          {
+            "label": "new_owner",
+            "type": {
+              "displayName": [
+                "AccountId"
+              ],
+              "type": 0
+            }
+          }
+        ],
+        "default": false,
+        "docs": [],
+        "label": "transfer_ownership",
+        "mutates": true,
+        "payable": false,
+        "returnType": {
+          "displayName": [
+            "ink",
+            "MessageResult"
+          ],
+          "type": 32
+        },
+        "selector": "0x107e33ea"
+      },
+      {
+        "args": [
+          {
+            "label": "relayer",
+            "type": {
+              "displayName": [
+                "AccountId"
+              ],
+              "type": 0
+            }
+          }
+        ],
+        "default": false,
+        "docs": [],
+        "label": "add_trusted_relayer",
+        "mutates": true,
+        "payable": false,
+        "returnType": {
+          "displayName": [
+            "ink",
+            "MessageResult"
+          ],
+          "type": 32
+        },
+        "selector": "0xb9dc4b1b"
+      },
+      {
+        "args": [
+          {
+            "label": "relayer",
+            "type": {
+              "displayName": [
+                "AccountId"
+              ],
+              "type": 0
+            }
+          }
+        ],
+        "default": false,
+        "docs": [],
+        "label": "remove_trusted_relayer",
+        "mutates": true,
+        "payable": false,
+        "returnType": {
+          "displayName": [
+            "ink",
+            "MessageResult"
+          ],
+          "type": 32
+        },
+        "selector": "0x04161d21"
+      }
+    ]
+  },
+  "storage": {
+    "root": {
+      "layout": {
+        "struct": {
+          "fields": [
+            {
+              "layout": {
+                "leaf": {
+                  "key": "0x00000000",
+                  "ty": 0
+                }
+              },
+              "name": "owner"
+            },
+            {
+              "layout": {
+                "leaf": {
+                  "key": "0x00000000",
+                  "ty": 0
+                }
+              },
+              "name": "escrow_factory"
+            },
+            {
+              "layout": {
+                "root": {
+                  "layout": {
+                    "struct": {
+                      "fields": [
+                        {
+                          "layout": {
+                            "array": {
+                              "layout": {
+                                "leaf": {
+                                  "key": "0x7e6972f4",
+                                  "ty": 2
+                                }
+                              },
+                              "len": 32,
+                              "offset": "0x7e6972f4"
+                            }
+                          },
+                          "name": "order_hash"
+                        },
+                        {
+                          "layout": {
+                            "array": {
+                              "layout": {
+                                "leaf": {
+                                  "key": "0x7e6972f4",
+                                  "ty": 2
+                                }
+                              },
+                              "len": 32,
+                              "offset": "0x7e6972f4"
+                            }
+                          },
+                          "name": "hash_lock"
+                        },
+                        {
+                          "layout": {
+                            "leaf": {
+                              "key": "0x7e6972f4",
+                              "ty": 0
+                            }
+                          },
+                          "name": "maker"
+                        },
+                        {
+                          "layout": {
+                            "leaf": {
+                              "key": "0x7e6972f4",
+                              "ty": 0
+                            }
+                          },
+                          "name": "taker"
+                        },
+                        {
+                          "layout": {
+                            "leaf": {
+                              "key": "0x7e6972f4",
+                              "ty": 0
+                            }
+                          },
+                          "name": "token"
+                        },
+                        {
+                          "layout": {
+                            "leaf": {
+                              "key": "0x7e6972f4",
+                              "ty": 3
+                            }
+                          },
+                          "name": "amount"
+                        },
+                        {
+                          "layout": {
+                            "leaf": {
+                              "key": "0x7e6972f4",
+                              "ty": 3
+                            }
+                          },
+                          "name": "safety_deposit"
+                        },
+                        {
+                          "layout": {
+                            "struct": {
+                              "fields": [
+                                {
+                                  "layout": {
+                                    "leaf": {
+                                      "key": "0x7e6972f4",
+                                      "ty": 4
+                                    }
+                                  },
+                                  "name": "src_withdrawal"
+                                },
+                                {
+                                  "layout": {
+                                    "leaf": {
+                                      "key": "0x7e6972f4",
+                                      "ty": 4
+                                    }
+                                  },
+                                  "name": "src_public_withdrawal"
+                                },
+                                {
+                                  "layout": {
+                                    "leaf": {
+                                      "key": "0x7e6972f4",
+                                      "ty": 4
+                                    }
+                                  },
+                                  "name": "src_cancellation"
+                                },
+                                {
+                                  "layout": {
+                                    "leaf": {
+                                      "key": "0x7e6972f4",
+                                      "ty": 4
+                                    }
+                                  },
+                                  "name": "src_public_cancellation"
+                                },
+                                {
+                                  "layout": {
+                                    "leaf": {
+                                      "key": "0x7e6972f4",
+                                      "ty": 4
+                                    }
+                                  },
+                                  "name": "dst_withdrawal"
+                                },
+                                {
+                                  "layout": {
+                                    "leaf": {
+                                      "key": "0x7e6972f4",
+                                      "ty": 4
+                                    }
+                                  },
+                                  "name": "dst_public_withdrawal"
+                                },
+                                {
+                                  "layout": {
+                                    "leaf": {
+                                      "key": "0x7e6972f4",
+                                      "ty": 4
+                                    }
+                                  },
+                                  "name": "dst_cancellation"
+                                }
+                              ],
+                              "name": "TimeLocks"
+                            }
+                          },
+                          "name": "timelocks"
+                        },
+                        {
+                          "layout": {
+                            "enum": {
+                              "dispatchKey": "0x7e6972f4",
+                              "name": "Option",
+                              "variants": {
+                                "0": {
+                                  "fields": [],
+                                  "name": "None"
+                                },
+                                "1": {
+                                  "fields": [
+                                    {
+                                      "layout": {
+                                        "leaf": {
+                                          "key": "0x7e6972f4",
+                                          "ty": 5
+                                        }
+                                      },
+                                      "name": "0"
+                                    }
+                                  ],
+                                  "name": "Some"
+                                }
+                              }
+                            }
+                          },
+                          "name": "deployed_at"
+                        }
+                      ],
+                      "name": "EscrowImmutables"
+                    }
+                  },
+                  "root_key": "0x7e6972f4",
+                  "ty": 6
+                }
+              },
+              "name": "escrows"
+            },
+            {
+              "layout": {
+                "root": {
+                  "layout": {
+                    "leaf": {
+                      "key": "0xab233054",
+                      "ty": 0
+                    }
+                  },
+                  "root_key": "0xab233054",
+                  "ty": 14
+                }
+              },
+              "name": "escrow_addresses"
+            },
+            {
+              "layout": {
+                "array": {
+                  "layout": {
+                    "leaf": {
+                      "key": "0x00000000",
+                      "ty": 2
+                    }
+                  },
+                  "len": 20,
+                  "offset": "0x00000000"
+                }
+              },
+              "name": "ethereum_resolver"
+            },
+            {
+              "layout": {
+                "root": {
+                  "layout": {
+                    "leaf": {
+                      "key": "0x0ebc57e6",
+                      "ty": 17
+                    }
+                  },
+                  "root_key": "0x0ebc57e6",
+                  "ty": 18
+                }
+              },
+              "name": "trusted_relayers"
+            },
+            {
+              "layout": {
+                "leaf": {
+                  "key": "0x00000000",
+                  "ty": 3
+                }
+              },
+              "name": "min_safety_deposit"
+            },
+            {
+              "layout": {
+                "leaf": {
+                  "key": "0x00000000",
+                  "ty": 5
+                }
+              },
+              "name": "total_escrows_created"
+            }
+          ],
+          "name": "PolkadotResolver"
+        }
+      },
+      "root_key": "0x00000000",
+      "ty": 21
+    }
+  },
+  "types": [
+    {
+      "id": 0,
+      "type": {
+        "def": {
+          "composite": {
+            "fields": [
+              {
+                "type": 1,
+                "typeName": "[u8; 32]"
+              }
+            ]
+          }
+        },
+        "path": [
+          "ink_primitives",
+          "types",
+          "AccountId"
+        ]
+      }
+    },
+    {
+      "id": 1,
+      "type": {
+        "def": {
+          "array": {
+            "len": 32,
+            "type": 2
+          }
+        }
+      }
+    },
+    {
+      "id": 2,
+      "type": {
+        "def": {
+          "primitive": "u8"
+        }
+      }
+    },
+    {
+      "id": 3,
+      "type": {
+        "def": {
+          "primitive": "u128"
+        }
+      }
+    },
+    {
+      "id": 4,
+      "type": {
+        "def": {
+          "primitive": "u32"
+        }
+      }
+    },
+    {
+      "id": 5,
+      "type": {
+        "def": {
+          "primitive": "u64"
+        }
+      }
+    },
+    {
+      "id": 6,
+      "type": {
+        "def": {
+          "composite": {}
+        },
+        "params": [
+          {
+            "name": "K",
+            "type": 1
+          },
+          {
+            "name": "V",
+            "type": 7
+          },
+          {
+            "name": "KeyType",
+            "type": 10
+          }
+        ],
+        "path": [
+          "ink_storage",
+          "lazy",
+          "mapping",
+          "Mapping"
+        ]
+      }
+    },
+    {
+      "id": 7,
+      "type": {
+        "def": {
+          "composite": {
+            "fields": [
+              {
+                "name": "order_hash",
+                "type": 1,
+                "typeName": "[u8; 32]"
+              },
+              {
+                "name": "hash_lock",
+                "type": 1,
+                "typeName": "[u8; 32]"
+              },
+              {
+                "name": "maker",
+                "type": 0,
+                "typeName": "AccountId"
+              },
+              {
+                "name": "taker",
+                "type": 0,
+                "typeName": "AccountId"
+              },
+              {
+                "name": "token",
+                "type": 0,
+                "typeName": "AccountId"
+              },
+              {
+                "name": "amount",
+                "type": 3,
+                "typeName": "Balance"
+              },
+              {
+                "name": "safety_deposit",
+                "type": 3,
+                "typeName": "Balance"
+              },
+              {
+                "name": "timelocks",
+                "type": 8,
+                "typeName": "TimeLocks"
+              },
+              {
+                "name": "deployed_at",
+                "type": 9,
+                "typeName": "Option<Timestamp>"
+              }
+            ]
+          }
+        },
+        "path": [
+          "polkadot_resolver",
+          "polkadot_resolver",
+          "EscrowImmutables"
+        ]
+      }
+    },
+    {
+      "id": 8,
+      "type": {
+        "def": {
+          "composite": {
+            "fields": [
+              {
+                "name": "src_withdrawal",
+                "type": 4,
+                "typeName": "u32"
+              },
+              {
+                "name": "src_public_withdrawal",
+                "type": 4,
+                "typeName": "u32"
+              },
+              {
+                "name": "src_cancellation",
+                "type": 4,
+                "typeName": "u32"
+              },
+              {
+                "name": "src_public_cancellation",
+                "type": 4,
+                "typeName": "u32"
+              },
+              {
+                "name": "dst_withdrawal",
+                "type": 4,
+                "typeName": "u32"
+              },
+              {
+                "name": "dst_public_withdrawal",
+                "type": 4,
+                "typeName": "u32"
+              },
+              {
+                "name": "dst_cancellation",
+                "type": 4,
+                "typeName": "u32"
+              }
+            ]
+          }
+        },
+        "path": [
+          "polkadot_resolver",
+          "polkadot_resolver",
+          "TimeLocks"
+        ]
+      }
+    },
+    {
+      "id": 9,
+      "type": {
+        "def": {
+          "variant": {
+            "variants": [
+              {
+                "index": 0,
+                "name": "None"
+              },
+              {
+                "fields": [
+                  {
+                    "type": 5
+                  }
+                ],
+                "index": 1,
+                "name": "Some"
+              }
+            ]
+          }
+        },
+        "params": [
+          {
+            "name": "T",
+            "type": 5
+          }
+        ],
+        "path": [
+          "Option"
+        ]
+      }
+    },
+    {
+      "id": 10,
+      "type": {
+        "def": {
+          "composite": {}
+        },
+        "params": [
+          {
+            "name": "L",
+            "type": 11
+          },
+          {
+            "name": "R",
+            "type": 12
+          }
+        ],
+        "path": [
+          "ink_storage_traits",
+          "impls",
+          "ResolverKey"
+        ]
+      }
+    },
+    {
+      "id": 11,
+      "type": {
+        "def": {
+          "composite": {}
+        },
+        "path": [
+          "ink_storage_traits",
+          "impls",
+          "AutoKey"
+        ]
+      }
+    },
+    {
+      "id": 12,
+      "type": {
+        "def": {
+          "composite": {}
+        },
+        "params": [
+          {
+            "name": "ParentKey",
+            "type": 13
+          }
+        ],
+        "path": [
+          "ink_storage_traits",
+          "impls",
+          "ManualKey"
+        ]
+      }
+    },
+    {
+      "id": 13,
+      "type": {
+        "def": {
+          "tuple": []
+        }
+      }
+    },
+    {
+      "id": 14,
+      "type": {
+        "def": {
+          "composite": {}
+        },
+        "params": [
+          {
+            "name": "K",
+            "type": 1
+          },
+          {
+            "name": "V",
+            "type": 0
+          },
+          {
+            "name": "KeyType",
+            "type": 15
+          }
+        ],
+        "path": [
+          "ink_storage",
+          "lazy",
+          "mapping",
+          "Mapping"
+        ]
+      }
+    },
+    {
+      "id": 15,
+      "type": {
+        "def": {
+          "composite": {}
+        },
+        "params": [
+          {
+            "name": "L",
+            "type": 11
+          },
+          {
+            "name": "R",
+            "type": 16
+          }
+        ],
+        "path": [
+          "ink_storage_traits",
+          "impls",
+          "ResolverKey"
+        ]
+      }
+    },
+    {
+      "id": 16,
+      "type": {
+        "def": {
+          "composite": {}
+        },
+        "params": [
+          {
+            "name": "ParentKey",
+            "type": 13
+          }
+        ],
+        "path": [
+          "ink_storage_traits",
+          "impls",
+          "ManualKey"
+        ]
+      }
+    },
+    {
+      "id": 17,
+      "type": {
+        "def": {
+          "primitive": "bool"
+        }
+      }
+    },
+    {
+      "id": 18,
+      "type": {
+        "def": {
+          "composite": {}
+        },
+        "params": [
+          {
+            "name": "K",
+            "type": 0
+          },
+          {
+            "name": "V",
+            "type": 17
+          },
+          {
+            "name": "KeyType",
+            "type": 19
+          }
+        ],
+        "path": [
+          "ink_storage",
+          "lazy",
+          "mapping",
+          "Mapping"
+        ]
+      }
+    },
+    {
+      "id": 19,
+      "type": {
+        "def": {
+          "composite": {}
+        },
+        "params": [
+          {
+            "name": "L",
+            "type": 11
+          },
+          {
+            "name": "R",
+            "type": 20
+          }
+        ],
+        "path": [
+          "ink_storage_traits",
+          "impls",
+          "ResolverKey"
+        ]
+      }
+    },
+    {
+      "id": 20,
+      "type": {
+        "def": {
+          "composite": {}
+        },
+        "params": [
+          {
+            "name": "ParentKey",
+            "type": 13
+          }
+        ],
+        "path": [
+          "ink_storage_traits",
+          "impls",
+          "ManualKey"
+        ]
+      }
+    },
+    {
+      "id": 21,
+      "type": {
+        "def": {
+          "composite": {
+            "fields": [
+              {
+                "name": "owner",
+                "type": 0,
+                "typeName": "<AccountId as::ink::storage::traits::AutoStorableHint<::ink::\nstorage::traits::ManualKey<175699523u32, ()>,>>::Type"
+              },
+              {
+                "name": "escrow_factory",
+                "type": 0,
+                "typeName": "<AccountId as::ink::storage::traits::AutoStorableHint<::ink::\nstorage::traits::ManualKey<1683650055u32, ()>,>>::Type"
+              },
+              {
+                "name": "escrows",
+                "type": 6,
+                "typeName": "<Mapping<[u8; 32], EscrowImmutables> as::ink::storage::traits::\nAutoStorableHint<::ink::storage::traits::ManualKey<4101138814u32,\n()>,>>::Type"
+              },
+              {
+                "name": "escrow_addresses",
+                "type": 14,
+                "typeName": "<Mapping<[u8; 32], AccountId> as::ink::storage::traits::\nAutoStorableHint<::ink::storage::traits::ManualKey<1412441003u32,\n()>,>>::Type"
+              },
+              {
+                "name": "ethereum_resolver",
+                "type": 22,
+                "typeName": "<[u8; 20] as::ink::storage::traits::AutoStorableHint<::ink::\nstorage::traits::ManualKey<1929496830u32, ()>,>>::Type"
+              },
+              {
+                "name": "trusted_relayers",
+                "type": 18,
+                "typeName": "<Mapping<AccountId, bool> as::ink::storage::traits::\nAutoStorableHint<::ink::storage::traits::ManualKey<3864509454u32,\n()>,>>::Type"
+              },
+              {
+                "name": "min_safety_deposit",
+                "type": 3,
+                "typeName": "<Balance as::ink::storage::traits::AutoStorableHint<::ink::\nstorage::traits::ManualKey<1031072914u32, ()>,>>::Type"
+              },
+              {
+                "name": "total_escrows_created",
+                "type": 5,
+                "typeName": "<u64 as::ink::storage::traits::AutoStorableHint<::ink::storage\n::traits::ManualKey<3915407603u32, ()>,>>::Type"
+              }
+            ]
+          }
+        },
+        "path": [
+          "polkadot_resolver",
+          "polkadot_resolver",
+          "PolkadotResolver"
+        ]
+      }
+    },
+    {
+      "id": 22,
+      "type": {
+        "def": {
+          "array": {
+            "len": 20,
+            "type": 2
+          }
+        }
+      }
+    },
+    {
+      "id": 23,
+      "type": {
+        "def": {
+          "variant": {
+            "variants": [
+              {
+                "fields": [
+                  {
+                    "type": 13
+                  }
+                ],
+                "index": 0,
+                "name": "Ok"
+              },
+              {
+                "fields": [
+                  {
+                    "type": 24
+                  }
+                ],
+                "index": 1,
+                "name": "Err"
+              }
+            ]
+          }
+        },
+        "params": [
+          {
+            "name": "T",
+            "type": 13
+          },
+          {
+            "name": "E",
+            "type": 24
+          }
+        ],
+        "path": [
+          "Result"
+        ]
+      }
+    },
+    {
+      "id": 24,
+      "type": {
+        "def": {
+          "variant": {
+            "variants": [
+              {
+                "index": 1,
+                "name": "CouldNotReadInput"
+              }
+            ]
+          }
+        },
+        "path": [
+          "ink_primitives",
+          "LangError"
+        ]
+      }
+    },
+    {
+      "id": 25,
+      "type": {
+        "def": {
+          "composite": {
+            "fields": [
+              {
+                "name": "salt",
+                "type": 3,
+                "typeName": "u128"
+              },
+              {
+                "name": "maker",
+                "type": 0,
+                "typeName": "AccountId"
+              },
+              {
+                "name": "receiver",
+                "type": 0,
+                "typeName": "AccountId"
+              },
+              {
+                "name": "maker_asset",
+                "type": 0,
+                "typeName": "AccountId"
+              },
+              {
+                "name": "taker_asset",
+                "type": 22,
+                "typeName": "[u8; 20]"
+              },
+              {
+                "name": "making_amount",
+                "type": 3,
+                "typeName": "Balance"
+              },
+              {
+                "name": "taking_amount",
+                "type": 3,
+                "typeName": "Balance"
+              },
+              {
+                "name": "maker_traits",
+                "type": 1,
+                "typeName": "U256"
+              }
+            ]
+          }
+        },
+        "path": [
+          "polkadot_resolver",
+          "polkadot_resolver",
+          "Order"
+        ]
+      }
+    },
+    {
+      "id": 26,
+      "type": {
+        "def": {
+          "array": {
+            "len": 65,
+            "type": 2
+          }
+        }
+      }
+    },
+    {
+      "id": 27,
+      "type": {
+        "def": {
+          "composite": {
+            "fields": [
+              {
+                "name": "traits",
+                "type": 1,
+                "typeName": "U256"
+              }
+            ]
+          }
+        },
+        "path": [
+          "polkadot_resolver",
+          "polkadot_resolver",
+          "TakerTraits"
+        ]
+      }
+    },
+    {
+      "id": 28,
+      "type": {
+        "def": {
+          "sequence": {
+            "type": 2
+          }
+        }
+      }
+    },
+    {
+      "id": 29,
+      "type": {
+        "def": {
+          "variant": {
+            "variants": [
+              {
+                "fields": [
+                  {
+                    "type": 30
+                  }
+                ],
+                "index": 0,
+                "name": "Ok"
+              },
+              {
+                "fields": [
+                  {
+                    "type": 24
+                  }
+                ],
+                "index": 1,
+                "name": "Err"
+              }
+            ]
+          }
+        },
+        "params": [
+          {
+            "name": "T",
+            "type": 30
+          },
+          {
+            "name": "E",
+            "type": 24
+          }
+        ],
+        "path": [
+          "Result"
+        ]
+      }
+    },
+    {
+      "id": 30,
+      "type": {
+        "def": {
+          "variant": {
+            "variants": [
+              {
+                "fields": [
+                  {
+                    "type": 0
+                  }
+                ],
+                "index": 0,
+                "name": "Ok"
+              },
+              {
+                "fields": [
+                  {
+                    "type": 31
+                  }
+                ],
+                "index": 1,
+                "name": "Err"
+              }
+            ]
+          }
+        },
+        "params": [
+          {
+            "name": "T",
+            "type": 0
+          },
+          {
+            "name": "E",
+            "type": 31
+          }
+        ],
+        "path": [
+          "Result"
+        ]
+      }
+    },
+    {
+      "id": 31,
+      "type": {
+        "def": {
+          "variant": {
+            "variants": [
+              {
+                "index": 0,
+                "name": "Unauthorized"
+              },
+              {
+                "index": 1,
+                "name": "OnlyOwner"
+              },
+              {
+                "index": 2,
+                "name": "EscrowNotFound"
+              },
+              {
+                "index": 3,
+                "name": "InvalidOrderHash"
+              },
+              {
+                "index": 4,
+                "name": "InvalidSecret"
+              },
+              {
+                "index": 5,
+                "name": "InvalidImmutables"
+              },
+              {
+                "index": 6,
+                "name": "DeadlineExpired"
+              },
+              {
+                "index": 7,
+                "name": "TimelockNotExpired"
+              },
+              {
+                "index": 8,
+                "name": "NativeTokenSendingFailure"
+              },
+              {
+                "index": 9,
+                "name": "TransferFailed"
+              },
+              {
+                "index": 10,
+                "name": "InsufficientFunds"
+              },
+              {
+                "index": 11,
+                "name": "LengthMismatch"
+              },
+              {
+                "index": 12,
+                "name": "InvalidLength"
+              },
+              {
+                "index": 13,
+                "name": "ArithmeticOverflow"
+              }
+            ]
+          }
+        },
+        "path": [
+          "polkadot_resolver",
+          "polkadot_resolver",
+          "Error"
+        ]
+      }
+    },
+    {
+      "id": 32,
+      "type": {
+        "def": {
+          "variant": {
+            "variants": [
+              {
+                "fields": [
+                  {
+                    "type": 33
+                  }
+                ],
+                "index": 0,
+                "name": "Ok"
+              },
+              {
+                "fields": [
+                  {
+                    "type": 24
+                  }
+                ],
+                "index": 1,
+                "name": "Err"
+              }
+            ]
+          }
+        },
+        "params": [
+          {
+            "name": "T",
+            "type": 33
+          },
+          {
+            "name": "E",
+            "type": 24
+          }
+        ],
+        "path": [
+          "Result"
+        ]
+      }
+    },
+    {
+      "id": 33,
+      "type": {
+        "def": {
+          "variant": {
+            "variants": [
+              {
+                "fields": [
+                  {
+                    "type": 13
+                  }
+                ],
+                "index": 0,
+                "name": "Ok"
+              },
+              {
+                "fields": [
+                  {
+                    "type": 31
+                  }
+                ],
+                "index": 1,
+                "name": "Err"
+              }
+            ]
+          }
+        },
+        "params": [
+          {
+            "name": "T",
+            "type": 13
+          },
+          {
+            "name": "E",
+            "type": 31
+          }
+        ],
+        "path": [
+          "Result"
+        ]
+      }
+    },
+    {
+      "id": 34,
+      "type": {
+        "def": {
+          "sequence": {
+            "type": 0
+          }
+        }
+      }
+    },
+    {
+      "id": 35,
+      "type": {
+        "def": {
+          "sequence": {
+            "type": 28
+          }
+        }
+      }
+    },
+    {
+      "id": 36,
+      "type": {
+        "def": {
+          "variant": {
+            "variants": [
+              {
+                "fields": [
+                  {
+                    "type": 37
+                  }
+                ],
+                "index": 0,
+                "name": "Ok"
+              },
+              {
+                "fields": [
+                  {
+                    "type": 24
+                  }
+                ],
+                "index": 1,
+                "name": "Err"
+              }
+            ]
+          }
+        },
+        "params": [
+          {
+            "name": "T",
+            "type": 37
+          },
+          {
+            "name": "E",
+            "type": 24
+          }
+        ],
+        "path": [
+          "Result"
+        ]
+      }
+    },
+    {
+      "id": 37,
+      "type": {
+        "def": {
+          "variant": {
+            "variants": [
+              {
+                "fields": [
+                  {
+                    "type": 17
+                  }
+                ],
+                "index": 0,
+                "name": "Ok"
+              },
+              {
+                "fields": [
+                  {
+                    "type": 31
+                  }
+                ],
+                "index": 1,
+                "name": "Err"
+              }
+            ]
+          }
+        },
+        "params": [
+          {
+            "name": "T",
+            "type": 17
+          },
+          {
+            "name": "E",
+            "type": 31
+          }
+        ],
+        "path": [
+          "Result"
+        ]
+      }
+    },
+    {
+      "id": 38,
+      "type": {
+        "def": {
+          "variant": {
+            "variants": [
+              {
+                "fields": [
+                  {
+                    "type": 39
+                  }
+                ],
+                "index": 0,
+                "name": "Ok"
+              },
+              {
+                "fields": [
+                  {
+                    "type": 24
+                  }
+                ],
+                "index": 1,
+                "name": "Err"
+              }
+            ]
+          }
+        },
+        "params": [
+          {
+            "name": "T",
+            "type": 39
+          },
+          {
+            "name": "E",
+            "type": 24
+          }
+        ],
+        "path": [
+          "Result"
+        ]
+      }
+    },
+    {
+      "id": 39,
+      "type": {
+        "def": {
+          "variant": {
+            "variants": [
+              {
+                "index": 0,
+                "name": "None"
+              },
+              {
+                "fields": [
+                  {
+                    "type": 7
+                  }
+                ],
+                "index": 1,
+                "name": "Some"
+              }
+            ]
+          }
+        },
+        "params": [
+          {
+            "name": "T",
+            "type": 7
+          }
+        ],
+        "path": [
+          "Option"
+        ]
+      }
+    },
+    {
+      "id": 40,
+      "type": {
+        "def": {
+          "variant": {
+            "variants": [
+              {
+                "fields": [
+                  {
+                    "type": 41
+                  }
+                ],
+                "index": 0,
+                "name": "Ok"
+              },
+              {
+                "fields": [
+                  {
+                    "type": 24
+                  }
+                ],
+                "index": 1,
+                "name": "Err"
+              }
+            ]
+          }
+        },
+        "params": [
+          {
+            "name": "T",
+            "type": 41
+          },
+          {
+            "name": "E",
+            "type": 24
+          }
+        ],
+        "path": [
+          "Result"
+        ]
+      }
+    },
+    {
+      "id": 41,
+      "type": {
+        "def": {
+          "variant": {
+            "variants": [
+              {
+                "index": 0,
+                "name": "None"
+              },
+              {
+                "fields": [
+                  {
+                    "type": 0
+                  }
+                ],
+                "index": 1,
+                "name": "Some"
+              }
+            ]
+          }
+        },
+        "params": [
+          {
+            "name": "T",
+            "type": 0
+          }
+        ],
+        "path": [
+          "Option"
+        ]
+      }
+    },
+    {
+      "id": 42,
+      "type": {
+        "def": {
+          "variant": {
+            "variants": [
+              {
+                "fields": [
+                  {
+                    "type": 0
+                  }
+                ],
+                "index": 0,
+                "name": "Ok"
+              },
+              {
+                "fields": [
+                  {
+                    "type": 24
+                  }
+                ],
+                "index": 1,
+                "name": "Err"
+              }
+            ]
+          }
+        },
+        "params": [
+          {
+            "name": "T",
+            "type": 0
+          },
+          {
+            "name": "E",
+            "type": 24
+          }
+        ],
+        "path": [
+          "Result"
+        ]
+      }
+    },
+    {
+      "id": 43,
+      "type": {
+        "def": {
+          "variant": {
+            "variants": [
+              {
+                "fields": [
+                  {
+                    "type": 22
+                  }
+                ],
+                "index": 0,
+                "name": "Ok"
+              },
+              {
+                "fields": [
+                  {
+                    "type": 24
+                  }
+                ],
+                "index": 1,
+                "name": "Err"
+              }
+            ]
+          }
+        },
+        "params": [
+          {
+            "name": "T",
+            "type": 22
+          },
+          {
+            "name": "E",
+            "type": 24
+          }
+        ],
+        "path": [
+          "Result"
+        ]
+      }
+    },
+    {
+      "id": 44,
+      "type": {
+        "def": {
+          "variant": {
+            "variants": [
+              {
+                "fields": [
+                  {
+                    "type": 5
+                  }
+                ],
+                "index": 0,
+                "name": "Ok"
+              },
+              {
+                "fields": [
+                  {
+                    "type": 24
+                  }
+                ],
+                "index": 1,
+                "name": "Err"
+              }
+            ]
+          }
+        },
+        "params": [
+          {
+            "name": "T",
+            "type": 5
+          },
+          {
+            "name": "E",
+            "type": 24
+          }
+        ],
+        "path": [
+          "Result"
+        ]
+      }
+    },
+    {
+      "id": 45,
+      "type": {
+        "def": {
+          "composite": {
+            "fields": [
+              {
+                "type": 1,
+                "typeName": "[u8; 32]"
+              }
+            ]
+          }
+        },
+        "path": [
+          "ink_primitives",
+          "types",
+          "Hash"
+        ]
+      }
+    },
+    {
+      "id": 46,
+      "type": {
+        "def": {
+          "variant": {}
+        },
+        "path": [
+          "ink_env",
+          "types",
+          "NoChainExtension"
+        ]
+      }
+    }
+  ],
+  "version": 5
+}
